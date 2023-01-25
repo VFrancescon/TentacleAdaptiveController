@@ -1,32 +1,49 @@
+#ifndef COMPFUNCS
+#define COMPFUNCS
+
 #include <iostream>
+#include <math.h>
+#include <vector>
+#include <cassert>
+
 #include <eigen3/Eigen/Core>
-#include <opencv2/opencv.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/videoio.hpp>
-#include <opencv2/ximgproc.hpp>
-#include <pylon/PylonIncludes.h>
-#include <source/AStar.hpp>
-#include <sys/stat.h>
-using namespace cv;
+#include <DataTypes/DataTypes.hpp>
 
+template<typename T>
+void pop_front(std::vector<T>& vec)
+{
+    assert(!vec.empty());
+    vec.erase(vec.begin());
+};
 
-int threshold_low = 130;
-int threshold_high = 255;
-int link_lenght = 50;
+template<typename T>
+void pop_2ndback(std::vector<T>& vec)
+{
+    assert(!vec.empty());
+    vec.erase(vec.end()-2);
+};
 
-int PYLON_WIDTH = 2048;
-int PYLON_HEIGHT = 1536;
+struct dfltValues{
+    float len = 10e-3;
+    float d = 2e-3;
+    float E = 100e3;
+    float v = 0.43;
+};
 
-Mat IntroducerMask(Mat src);
+//Evaluation functions
+MatrixXd EvaluateK(std::vector<Link> &iLinks);
+void DirectKinematics(std::vector<PosOrientation> &iPosVec, std::vector<Joint> &iJoints, std::vector<Link> &iLinks);
+MatrixXd EvaluateJacobian(std::vector<PosOrientation> &iPosVec);
+MatrixXd MagtoFieldMap(std::vector<Joint> &iJoints);
 
-bool xWiseSort(Point lhs, Point rhs){
-    return (lhs.x < rhs.x);
-}
+//Utility functions
+MatrixXd StackDiagonals(std::vector<Matrix3d> matrices);
+Matrix3d RotationZYX(Matrix3d src, Vector3d jointAngles);
+Matrix3d SkewMatrix(Vector3d src);
+MatrixXd VerticalStack(MatrixXd M1, MatrixXd M2);
+VectorXd StackAngles(std::vector<Joint>& iJoints);
+Vector3d RotateField(Vector3d field, Vector3d rotationAngles);
+void adjustStiffness(std::vector<Link> &iLinks, double EMulitplier);
+Vector3d CalculateField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, std::vector<PosOrientation> &iPosVec);
 
-bool yWiseSort(Point lhs, Point rhs){
-    return (lhs.y > rhs.y);
-}
-
-int main(int argc, char* argv[]);
-
+#endif

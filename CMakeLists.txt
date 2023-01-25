@@ -39,10 +39,11 @@ include_directories(/opt/pylon/include)
 
 ## S5: Extra Sources
 set(CameraFuncs "extraFunctions/extraCameraFuncs.cpp")
+set(CompFuncs "extraFunctions/extraCompFuncs.cpp")
 
 add_executable( controllerPrototype "src/ControllerPrototype.cpp")
 target_link_libraries( controllerPrototype ${EIGEN} ${VisionLibs} ${MiddlewareLibs})
 
-target_sources(controllerPrototype PRIVATE ${CameraFuncs})
+target_sources(controllerPrototype PRIVATE ${CameraFuncs} ${CompFuncs})
 
 

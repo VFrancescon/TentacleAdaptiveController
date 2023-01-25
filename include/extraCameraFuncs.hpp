@@ -14,6 +14,13 @@
 using namespace cv;
 
 
+extern int threshold_low ;
+extern int threshold_high ;
+extern int link_lenght ;
+
+extern int PYLON_WIDTH ;
+extern int PYLON_HEIGHT;
+
 Mat IntroducerMask(Mat src);
 
 bool xWiseSort(Point lhs, Point rhs);
