@@ -5,9 +5,8 @@ double upperError  = 10e3;
 double lowError = 7e3;
 
 int main(int argc, char* argv[]){
-    std::cout << "Hello world!\n";
 
-        int jointEff = 5;
+    int jointEff = 5;
     int jointNo = jointEff+1;
 
     //timesteps are equal to joint no
@@ -63,13 +62,23 @@ int main(int argc, char* argv[]){
     
 
 
-    /**
-     * MIDDLEWARE SECTION BELOW
+    /**************************************************************
      * 
-     */
+     * 
+     * Middleware Setup
+     * 
+     * 
+    *****************************************************************/
     MiddlewareLayer mid(true);
     mid.set3DField(field);
 
+    /**************************************************************
+     * 
+     * 
+     * PYLON SETUP
+     * 
+     * 
+    *****************************************************************/
     Mat pre_img, post_img, intr_mask;
     Pylon::PylonInitialize();
     Pylon::CImageFormatConverter formatConverter;
@@ -99,16 +108,20 @@ int main(int argc, char* argv[]){
     int rrows = pre_img.rows  * 3 / 8;
     int rcols = pre_img.cols * 3 / 8; 
     
-    /**
-     * VIDEO OUTPUT WRITE
+    /**************************************************************
      * 
-     */
+     * 
+     * Video Output Setup
+     * 
+     * 
+    *****************************************************************/
     std::string outputPath = "C_PROTOTYPE.avi";
 
     while(file_exists(outputPath)){
         outputPath += "_1";
     }
 
+    
 
     VideoWriter video_out(outputPath, VideoWriter::fourcc('M', 'J', 'P', 'G'), 10, 
                 Size(rrows, rcols));
@@ -176,19 +189,7 @@ int main(int argc, char* argv[]){
         int error = meanError(dAngleSlice, angles);
         std::cout << "\n\n---------------------------------------------------------\n\n";
         
-
-        //Fetched error e
-        //Now we have N scenarios
-        //And thresholds LowS, HighS
-        //And adjustment factor P
-        //Scenario 1. -LowS < e < +LowS -> Do nothing
-        //Scenario 2. -HighS < e < -LowS -> Field - P
-        //Scenario 3. e < -HighS -> K--
-        //Scenario 4. +LowS > e > +HighS -> Field + P
-        //Scenario 5. e > +HighS -> K++
-
-
-        //Slightly less verbose
+        //Controller Logic
         //if e < 0: signFlag = -1
         //else signFlag = 1
         //then e = abs(e)
