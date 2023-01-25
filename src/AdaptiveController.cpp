@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
      *
      *
      *****************************************************************/
-    MiddlewareLayer mid(true);
+    MiddlewareLayer mid(false);
     mid.set3DField(field);
 
     /**************************************************************
@@ -126,6 +126,7 @@ int main(int argc, char *argv[])
     // intr_mask = IntroducerMask(pre_img1);
     intr_mask = IntroducerMask(pre_img);
     int jointsCached = 0;
+    bool bestSolutionFound;
     Point p0 = Point{-2000, 2000};
     double bx_add = 0, bz_add = 0;
     std::cout << "Ready to go. Press enter";
@@ -157,6 +158,15 @@ int main(int argc, char *argv[])
 
         Joints = findJoints(post_img_masked, contours);
         int JointsObserved = Joints.size();
+
+        if(bestSolutionFound){
+            //Push until we get a new joint
+            while(jointsCached == JointsObserved){
+                mid.stepIntroducer();
+                usleep(10e-6);
+            }
+        }
+        
         for (auto i : Joints)
         {
             circle(post_img, i, 4, Scalar(255, 0, 0), FILLED);
