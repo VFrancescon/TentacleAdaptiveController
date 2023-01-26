@@ -42,8 +42,11 @@ set(CameraFuncs "extraFunctions/extraCameraFuncs.cpp")
 set(CompFuncs "extraFunctions/extraCompFuncs.cpp")
 
 add_executable( controllerPrototype "src/ControllerPrototype.cpp")
+add_executable( AdaptiveController "src/AdaptiveController.cpp")
 target_link_libraries( controllerPrototype ${EIGEN} ${VisionLibs} ${MiddlewareLibs})
+target_link_libraries( AdaptiveController ${EIGEN} ${VisionLibs} ${MiddlewareLibs})
 
 target_sources(controllerPrototype PRIVATE ${CameraFuncs} ${CompFuncs})
+target_sources(AdaptiveController PRIVATE ${CameraFuncs} ${CompFuncs})
 
 

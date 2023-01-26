@@ -54,10 +54,40 @@ int main(int argc, char *argv[])
     std::vector<Link> iLinks(jointEff);
     adjustStiffness(iLinks, EMulitplier);
 
+    /**************************************************************
+     *
+     *
+     * CalculateField for one configuration only
+     *
+     *
+     *****************************************************************/
     // Vector3d field = RotateField(solution, reconciliationAngles);
-    Vector3d field = CalculateField(iLinks, iJoints, iPosVec);
-    field(1) = 0;
-    std::cout << "Initial answer: " << field << "\n";
+    // Vector3d field = CalculateField(iLinks, iJoints, iPosVec);
+    // field(1) = 0;
+    // std::cout << "Initial answer: " << field << "\n";
+
+    /**************************************************************
+     *
+     *
+     * CalculateField for all configurations
+     *
+     *
+     *****************************************************************/
+    
+    // Vector3d field = RotateField(solution, reconciliationAngles);
+    std::vector<Vector3d> allFields;
+    for(int i = 2; i < jointNo+1; i++){
+        std::vector<Link> iLinks_ = std::vector<Link>(iLinks.end()-i+1, iLinks.end());
+        std::vector<Joint> iJoints_ = std::vector<Joint>(iJoints.end()-i, iJoints.end());
+        std::vector<PosOrientation> iPosVec_ = std::vector<PosOrientation>(iPosVec.end()-i, iPosVec.end());
+        Vector3d field = CalculateField(iLinks_, iJoints_, iPosVec_);
+        field(1) = 0;
+        allFields.push_back(field);
+    }
+    int l = 1;
+    for(auto field: allFields){
+        std::cout << "Answer at timestep " << l++ << ":\n" << field << "\n";
+    }
 
     /**************************************************************
      *
@@ -67,7 +97,6 @@ int main(int argc, char *argv[])
      *
      *****************************************************************/
     MiddlewareLayer mid(false);
-    mid.set3DField(field);
 
     /**************************************************************
      *
@@ -126,11 +155,15 @@ int main(int argc, char *argv[])
     // intr_mask = IntroducerMask(pre_img1);
     intr_mask = IntroducerMask(pre_img);
     int jointsCached = 0;
-    bool bestSolutionFound;
+    bool bestSolutionFound = true;
     Point p0 = Point{-2000, 2000};
     double bx_add = 0, bz_add = 0;
     std::cout << "Ready to go. Press enter";
     std::cin.get();
+    Vector3d runtimeField;
+    std::vector<Link> iLinks_;
+    std::vector<Joint> iJoints_;
+    std::vector<PosOrientation> iPosVec_;
 
     while (camera.IsGrabbing())
     {
@@ -161,12 +194,16 @@ int main(int argc, char *argv[])
 
         if(bestSolutionFound){
             //Push until we get a new joint
-            while(jointsCached == JointsObserved){
+            while(jointsCached != JointsObserved){
                 mid.stepIntroducer();
-                usleep(10e-6);
+                usleep(10e6);
             }
+            bestSolutionFound = false;
+            runtimeField = allFields[JointsObserved];
+            iLinks_ = std::vector<Link>(iLinks.end()-JointsObserved,  iLinks.end());
+            iJoints_ = std::vector<Joint>(iJoints.end()-JointsObserved-1, iJoints.end());
+            iPosVec_ = std::vector<PosOrientation>(iPosVec.end()-JointsObserved-1, iPosVec.end());
         }
-        
         for (auto i : Joints)
         {
             circle(post_img, i, 4, Scalar(255, 0, 0), FILLED);
@@ -174,7 +211,7 @@ int main(int argc, char *argv[])
         drawContours(post_img, contours, -1, Scalar(255, 255, 0));
 
         std::vector<double> angles;
-        std::vector<double> desiredAngles_ = std::vector<double>(DesiredAngles.begin(), DesiredAngles.end() - 1);
+        std::vector<double> desiredAngles_ = std::vector<double>(DesiredAngles.end() - JointsObserved - 1, DesiredAngles.end() - 1);
         std::vector<Point> idealPoints;
         if (p0 == Point{-2000, 2000})
             p0 = Joints[0];
@@ -218,27 +255,27 @@ int main(int argc, char *argv[])
         }
         else if (error > lowError && error < upperError)
         {
-            field += field * 0.1 * signFlag;
+            runtimeField += runtimeField * 0.1 * signFlag;
             std::cout << "Adjusting field\n";
         }
         else if (error > upperError)
         {
             EMulitplier += signFlag;
             adjustStiffness(iLinks, EMulitplier);
-            field = CalculateField(iLinks, iJoints, iPosVec);
-            field(1) = 0;
+            runtimeField = CalculateField(iLinks_, iJoints_, iPosVec_);
+            runtimeField(1) = 0;
             std::cout << "Adjusting E\n";
         }
 
         std::cout << "E: " << EMulitplier << " applied field:\n"
-                  << field << "\n";
+                  << runtimeField << "\n";
 
-        if (abs(field(0)) > 20 && abs(field(2)) > 15 && abs(field(1)) > 20)
+        if (abs(runtimeField(0)) > 20 && abs(runtimeField(2)) > 15 && abs(runtimeField(1)) > 20)
             break;
         if (EMulitplier < 0)
             break;
 
-        mid.set3DField(field);
+        mid.set3DField(runtimeField);
 
         imshow("Post", post_img);
         video_out.write(post_img);
@@ -250,7 +287,6 @@ int main(int argc, char *argv[])
     mid.~MiddlewareLayer();
     // destroyAllWindows();
     // Pylon::PylonTerminate();
-    return 0;
 
     return 0;
 }

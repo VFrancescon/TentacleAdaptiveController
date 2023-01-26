@@ -12,24 +12,46 @@ MatrixXd EvaluateK(std::vector<Link> &iLinks)
 {
     std::vector<Matrix3d> K_vec;
 
-    for (int i = 0; i < iLinks.size(); i++)
-    {
-        double lRadius = iLinks[i].d / 2;
-        double I = M_PI_4 * lRadius * lRadius * lRadius * lRadius;
-        double G = iLinks[i].E / (2 * (iLinks[i].v + 1));
-        double J = M_PI_2 * lRadius * lRadius * lRadius * lRadius;
-        double Kb = iLinks[i].E * I / iLinks[i].dL;
-        double Kt = G * J / iLinks[i].dL;
-        Matrix3d K = Matrix3d::Zero();
-        K(0, 0) = Kb;
-        K(1, 1) = Kb;
-        K(2, 2) = Kt;
-        K_vec.push_back(K);
-        // std::cout << "I " << i << "\nK\n" << K << "\n";
-    }
+    // if(iLinks.size() == 2){
+    //     double lRadius = iLinks[0].d / 2;
+    //     double I = M_PI_4 * lRadius * lRadius * lRadius * lRadius;
+    //     double G = iLinks[0].E / (2 * (iLinks[0].v + 1));
+    //     double J = M_PI_2 * lRadius * lRadius * lRadius * lRadius;
+    //     double Kb = iLinks[0].E * I / iLinks[0].dL;
+    //     double Kt = G * J / iLinks[0].dL;
+    //     Matrix3d K = Matrix3d::Zero();
+    //     K(0, 0) = Kb;
+    //     K(1, 1) = Kb;
+    //     K(2, 2) = Kt;
+    //     K_vec.push_back(K);
+    // } else {
+
+        for (int i = 0; i < iLinks.size(); i++)
+        {
+            double lRadius = iLinks[i].d / 2;
+            double I = M_PI_4 * lRadius * lRadius * lRadius * lRadius;
+            double G = iLinks[i].E / (2 * (iLinks[i].v + 1));
+            double J = M_PI_2 * lRadius * lRadius * lRadius * lRadius;
+            double Kb = iLinks[i].E * I / iLinks[i].dL;
+            double Kt = G * J / iLinks[i].dL;
+            Matrix3d K = Matrix3d::Zero();
+            K(0, 0) = Kb;
+            K(1, 1) = Kb;
+            K(2, 2) = Kt;
+            K_vec.push_back(K);
+            // std::cout << "I " << i << "\nK\n" << K << "\n";
+        }
+    // }
+
+
 
     MatrixXd KDiagonal;
     KDiagonal = StackDiagonals(K_vec);
+    
+    // std::cout << "KDiagonal \n" << KDiagonal << "\n";
+    // std::cout <<"Sizing: " << KDiagonal.rows() << "x" << KDiagonal.cols() << "\n";
+    
+
     return KDiagonal;
 }
 
@@ -123,6 +145,7 @@ MatrixXd EvaluateJacobian(std::vector<PosOrientation> &iPosVec)
             Jacobian(seq(0 + i * 6, 5 + i * 6), seq(0 + k * 3, 2 + k * 3)) = Jn;
         }
     }
+    // std::cout << "Jacobian sizing:" << Jacobian.cols() << "x" << Jacobian.rows() << "\n";
     return Jacobian;
 }
 
@@ -131,13 +154,19 @@ MatrixXd MagtoFieldMap(std::vector<Joint> &iJoints)
     MatrixXd Map(6 * (iJoints.size() - 1), 3);
     Map = MatrixXd::Zero(6 * (iJoints.size() - 1), 3);
     Matrix3d Zeros = Matrix3d::Zero();
-    for (int i = 0; i < iJoints.size() - 1; i++)
-    {
-        iJoints[i].GlobMag = iJoints[i + 1].Rotation * iJoints[i].LocMag;
-        Matrix3d Skewd = SkewMatrix(iJoints[i].GlobMag);
-        Map(seqN(3 + 6 * i, 3), seqN(0, 3)) = -Skewd;
-    }
-    // std::cout << "Magtofield map\n" << Map << "\n";
+    // if(iJoints.size() == 1){
+
+    //     iJoints[0].GlobMag = iJoints[0 + 1].Rotation * iJoints[0].LocMag;
+
+    // } else {
+        for (int i = 0; i < iJoints.size() - 1; i++)
+        {
+            iJoints[i].GlobMag = iJoints[i + 1].Rotation * iJoints[i].LocMag;
+            Matrix3d Skewd = SkewMatrix(iJoints[i].GlobMag);
+            Map(seqN(3 + 6 * i, 3), seqN(0, 3)) = -Skewd;
+        }
+    // }
+    // std::cout << "Mag to field map\n" << Map << "\n";
     // std::cout << "Sizing: " << Map.rows() << "x" << Map.cols() << "\n";
     // std::cout << "Size of ijoints " << iJoints.size() << "\n";
     return Map;
@@ -236,23 +265,35 @@ Vector3d CalculateField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
                         std::vector<PosOrientation> &iPosVec)
 {
     MatrixXd KStacked;
+    // std::cout << "EvaluateK breaks\n";
     KStacked = EvaluateK(iLinks);
-    int jointNo = iLinks.size();
     VectorXd AnglesStacked;
+    // std::cout << "StackAngles breaks\n";
     AnglesStacked = StackAngles(iJoints);
 
+    // std::cout <<"Direct Kinematics breaks\n";
     DirectKinematics(iPosVec, iJoints, iLinks);
     MatrixXd Jacobian, Jt;
+    // std::cout << "Jacobian breaks\n";
     Jacobian = EvaluateJacobian(iPosVec);
     Jt = Jacobian.transpose();
 
     MatrixXd FieldMap;
+    // std::cout << "Map breaks\n";
     FieldMap = MagtoFieldMap(iJoints);
-
+    
+    // std::cout << "Breaks at RHS\n";
+    // std::cout << "Jt: " << Jt.rows() << "x" << Jt.cols() << 
+    // "FieldMap: " << FieldMap.rows() << "x" << FieldMap.cols() << "\n";
     MatrixXd RHS = Jt * FieldMap;
+    // std::cout <<"Breaks converting anglesstacked\n";
     AnglesStacked = AnglesStacked * M_PI / 180;
+    // std::cout << "breaks at lhs\n";
+    // std::cout << "Kstacked: " << KStacked.rows() << "x" << KStacked.cols() << 
+    // " AnglesStacked: " << AnglesStacked.rows() << "x" << AnglesStacked.cols() << "\n";
     MatrixXd LHS = KStacked * AnglesStacked;
 
+    // std::cout <<"Solve breaks\n";s
     MatrixXd solution = RHS.completeOrthogonalDecomposition().solve(LHS);
     return solution * 1000;
 }
