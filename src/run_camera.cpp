@@ -20,8 +20,8 @@ int threshold_low = 131;
 int threshold_high = 255;
 int link_length = 55;
 
-int PYLON_WIDTH = 2048;
-int PYLON_HEIGHT = 1536;
+int PYLON_WIDTH = 1920;
+int PYLON_HEIGHT = 1200;
 
 
 using namespace cv;

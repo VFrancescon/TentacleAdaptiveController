@@ -19,6 +19,7 @@ extern int link_lenght;
 
 extern int PYLON_WIDTH;
 extern int PYLON_HEIGHT;
+extern float exposureTime;
 
 /**
  * @brief Generates a Mask containing all pre-introduction elements to block them out in processing.

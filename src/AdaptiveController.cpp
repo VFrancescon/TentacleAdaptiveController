@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
     Pylon::CIntegerParameter width(camera.GetNodeMap(), "Width");
     Pylon::CIntegerParameter height(camera.GetNodeMap(), "Height");
     Pylon::CEnumParameter pixelFormat(camera.GetNodeMap(), "PixelFormat");
-    Pylon::CFloatParameter(camera.GetNodeMap(), "ExposureTime").SetValue(20000.0);
+    Pylon::CFloatParameter(camera.GetNodeMap(), "ExposureTime").SetValue(exposureTime);
     Size frameSize = Size((int)width.GetValue(), (int)height.GetValue());
     int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
     width.TrySetValue(PYLON_WIDTH, Pylon::IntegerValueCorrection_Nearest);

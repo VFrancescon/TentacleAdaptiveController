@@ -4,8 +4,9 @@ int threshold_low = 130;
 int threshold_high = 255;
 int link_lenght = 50;
 
-int PYLON_WIDTH = 2048;
-int PYLON_HEIGHT = 1536;
+int PYLON_WIDTH = 1920;
+int PYLON_HEIGHT = 1200;
+float exposureTime = 10000.0;
 
 Mat IntroducerMask(Mat src)
 {
