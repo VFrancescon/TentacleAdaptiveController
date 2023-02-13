@@ -3,6 +3,7 @@
 
 #include "extraCameraFuncs.hpp"
 #include "ExtraComputationFuncs.hpp"
+#include <ctime>
 
 inline bool file_exists(const std::string &name)
 {

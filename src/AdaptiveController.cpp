@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
      *
      *
      *****************************************************************/
-    MiddlewareLayer mid(false);
+    MiddlewareLayer mid(true);
 
     /**************************************************************
      *
@@ -140,7 +140,18 @@ int main(int argc, char *argv[])
      *
      *
      *****************************************************************/
-    std::string outputPath = "C_PROTOTYPE.avi";
+    /**
+     * Get today's date
+    */
+    time_t curr_time;
+    tm * curr_tm;
+    time(&curr_time);
+    curr_tm = localtime(&curr_time);
+    char date_string[100];
+    strftime(date_string, 50, "%d_%m_%y_", curr_tm);
+    std::string date(date_string);
+    
+    std::string outputPath = date + "C_PROTOTYPE.avi";
 
     while (file_exists(outputPath))
     {
@@ -148,10 +159,10 @@ int main(int argc, char *argv[])
     }
 
     VideoWriter video_out(outputPath, VideoWriter::fourcc('M', 'J', 'P', 'G'), 10,
-                          Size(rrows, rcols));
+                          Size(rcols, rrows));
 
-    // resize(pre_img, pre_img, Size(rrows, rcols), INTER_LINEAR);
-    // Mat pre_img1 = Mat::zeros(Size(rrows, rcols), CV_8UC3);
+    // resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
+    // Mat pre_img1 = Mat::zeros(Size(rcols, rrows), CV_8UC3);
     // intr_mask = IntroducerMask(pre_img1);
     intr_mask = IntroducerMask(pre_img);
     int jointsCached = 0;
@@ -176,9 +187,9 @@ int main(int argc, char *argv[])
         {
             break;
         }
-        resize(post_img, post_img, Size(rrows, rcols), INTER_LINEAR);
+        resize(post_img, post_img, Size(rcols, rrows), INTER_LINEAR);
         Mat post_img_grey, post_img_th;
-        Mat post_img_masked = Mat::zeros(Size(rrows, rcols), CV_8UC1);
+        Mat post_img_masked = Mat::zeros(Size(rcols, rrows), CV_8UC1);
 
         cvtColor(post_img, post_img_grey, COLOR_BGR2GRAY);
         blur(post_img_grey, post_img_grey, Size(5, 5));

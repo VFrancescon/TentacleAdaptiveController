@@ -81,28 +81,35 @@ int main(int argc, char *argv[])
     Pylon::CImageFormatConverter formatConverter;
     formatConverter.OutputPixelFormat = Pylon::PixelType_BGR8packed;
     Pylon::CPylonImage pylonImage;
-    Pylon::CInstantCamera camera(Pylon::CTlFactory::GetInstance().CreateFirstDevice());
+    Pylon::CInstantCamera camera(Pylon::CTlFactory::GetInstance().CreateFirstDevice() );
     camera.Open();
-    Pylon::CIntegerParameter width(camera.GetNodeMap(), "Width");
-    Pylon::CIntegerParameter height(camera.GetNodeMap(), "Height");
-    Pylon::CEnumParameter pixelFormat(camera.GetNodeMap(), "PixelFormat");
+    Pylon::CIntegerParameter width     ( camera.GetNodeMap(), "Width");
+    Pylon::CIntegerParameter height    ( camera.GetNodeMap(), "Height");
+    Pylon::CEnumParameter pixelFormat  ( camera.GetNodeMap(), "PixelFormat");
+    
     Pylon::CFloatParameter(camera.GetNodeMap(), "ExposureTime").SetValue(20000.0);
-    Size frameSize = Size((int)width.GetValue(), (int)height.GetValue());
+    
+    
+    
+    Size frameSize= Size((int)width.GetValue(), (int)height.GetValue());
     int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
     width.TrySetValue(PYLON_WIDTH, Pylon::IntegerValueCorrection_Nearest);
     height.TrySetValue(PYLON_HEIGHT, Pylon::IntegerValueCorrection_Nearest);
-    Pylon::CPixelTypeMapper pixelTypeMapper(&pixelFormat);
+    Pylon::CPixelTypeMapper pixelTypeMapper( &pixelFormat);
     Pylon::EPixelType pixelType = pixelTypeMapper.GetPylonPixelTypeFromNodeValue(pixelFormat.GetIntValue());
-
     camera.StartGrabbing(Pylon::GrabStrategy_LatestImageOnly);
     Pylon::CGrabResultPtr ptrGrabResult;
     camera.RetrieveResult(5000, ptrGrabResult, Pylon::TimeoutHandling_ThrowException);
-    const uint8_t *preImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
+    const uint8_t* preImageBuffer = (uint8_t*) ptrGrabResult->GetBuffer();
     formatConverter.Convert(pylonImage, ptrGrabResult);
-    pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(), CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
+    pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(), CV_8UC3, (uint8_t *) pylonImage.GetBuffer());
 
+    // VideoWriter video_out(home_path + "coil_manipulator/output.avi", VideoWriter::fourcc('M', 'J', 'P', 'G'), 10, 
+    //             Size(img.rows / 2, img.cols * 3 / 8));
+
+    //resizing the image for faster processing
     int rrows = pre_img.rows * 3 / 8;
-    int rcols = pre_img.cols * 3 / 8;
+    int rcols = pre_img.cols * 3 / 8; 
 
     /**************************************************************
      *
@@ -119,10 +126,10 @@ int main(int argc, char *argv[])
     }
 
     VideoWriter video_out(outputPath, VideoWriter::fourcc('M', 'J', 'P', 'G'), 10,
-                          Size(rrows, rcols));
+                          Size(rcols, rrows));
 
-    // resize(pre_img, pre_img, Size(rrows, rcols), INTER_LINEAR);
-    // Mat pre_img1 = Mat::zeros(Size(rrows, rcols), CV_8UC3);
+    // resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
+    // Mat pre_img1 = Mat::zeros(Size(rcols, rrows), CV_8UC3);
     // intr_mask = IntroducerMask(pre_img1);
     intr_mask = IntroducerMask(pre_img);
     int jointsCached = 0;
@@ -142,9 +149,9 @@ int main(int argc, char *argv[])
         {
             break;
         }
-        resize(post_img, post_img, Size(rrows, rcols), INTER_LINEAR);
+        resize(post_img, post_img, Size(rcols, rrows), INTER_LINEAR);
         Mat post_img_grey, post_img_th;
-        Mat post_img_masked = Mat::zeros(Size(rrows, rcols), CV_8UC1);
+        Mat post_img_masked = Mat::zeros(Size(rcols, rrows), CV_8UC1);
 
         cvtColor(post_img, post_img_grey, COLOR_BGR2GRAY);
         blur(post_img_grey, post_img_grey, Size(5, 5));

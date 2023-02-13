@@ -7,6 +7,7 @@
                 "/opt/pylon",
                 "/opt/pylon/include",
                 "${workspaceFolder}/include",
+                "${workspaceFolder}/extraFunctions",
                 "/usr/include/opencv4"
             ],
             "defines": [],

@@ -53,7 +53,8 @@ target_link_libraries(field3D ${MiddlewareLibs})
 target_link_libraries( th_cal ${VisionLibs})
 target_link_libraries( run_camera ${EIGEN} ${VisionLibs})
 
-target_sources(controllerPrototype PRIVATE ${CameraFuncs} ${CompFuncs})
+# target_sources(controllerPrototype PRIVATE ${CameraFuncs} ${CompFuncs})
 target_sources(AdaptiveController PRIVATE ${CameraFuncs} ${CompFuncs})
+target_sources(controllerPrototype PRIVATE ${CameraFuncs} ${CompFuncs})
 
 

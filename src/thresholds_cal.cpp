@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
     // int rows = frame.rows * 3 / 8;
     // int cols = frame.cols * 3 / 8; 
     //make image smaller 
-    // resize(frame, frame, Size(rows, cols), INTER_LINEAR);
+    // resize(frame, frame, Size(cols, rows), INTER_LINEAR);
     
     /*
     Add streaming pylonImg to frame here
@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
         int rows = frame.rows  * 3 /8;
         int cols = frame.cols * 3 / 8; 
         // make image smaller 
-        resize(frame, frame, Size(rows, cols), INTER_LINEAR);
+        resize(frame, frame, Size(cols, rows), INTER_LINEAR);
         
         cvtColor(frame, frame_BGR, COLOR_BGR2GRAY);
         blur(frame_BGR, frame_BGR, Size(5,5));
@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
             int cols = frame.cols * 3 / 8;
             
             // make image smaller 
-            resize(frame, frame, Size(rows, cols), INTER_LINEAR);
+            resize(frame, frame, Size(cols, rows), INTER_LINEAR);
         }
     }
     Pylon::PylonTerminate();
