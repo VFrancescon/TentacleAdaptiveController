@@ -1,28 +1,4 @@
-#include <algorithm>
-#include <opencv2/ximgproc.hpp>
-#include <opencv2/video.hpp>
-#include <fstream>
-#include <chrono>
-#include <unistd.h>
-#include <iostream>
-#include <eigen3/Eigen/Core>
-#include <opencv2/opencv.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/videoio.hpp>
-#include <pylon/PylonIncludes.h>
-#include <sys/stat.h>
-#include <iomanip>
-using namespace cv;
-
-
-int threshold_low = 131;
-int threshold_high = 255;
-int link_length = 55;
-
-int PYLON_WIDTH = 1920;
-int PYLON_HEIGHT = 1200;
-
+#include "extraCameraFuncs.hpp"
 
 using namespace cv;
 int main(int argc, char* argv[]){
@@ -37,7 +13,7 @@ int main(int argc, char* argv[]){
     Pylon::CIntegerParameter height    ( camera.GetNodeMap(), "Height");
     Pylon::CEnumParameter pixelFormat  ( camera.GetNodeMap(), "PixelFormat");
     
-    Pylon::CFloatParameter(camera.GetNodeMap(), "ExposureTime").SetValue(20000.0);
+    Pylon::CFloatParameter(camera.GetNodeMap(), "ExposureTime").SetValue(exposureTime);
     
     
     

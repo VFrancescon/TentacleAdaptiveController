@@ -1,12 +1,12 @@
 #include "extraCameraFuncs.hpp"
 
-int threshold_low = 225;
+int threshold_low = 232;
 int threshold_high = 255;
-int link_lenght = 50;
+int link_lenght = 65;
 
 int PYLON_WIDTH = 1920;
 int PYLON_HEIGHT = 1200;
-float exposureTime = 10000.0;
+float exposureTime = 15000.0;
 
 Mat IntroducerMask(Mat src)
 {
@@ -120,7 +120,7 @@ std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point
 
     std::vector<Point> Joints;
     int jointCount = (int)cntLine.size() / link_lenght;
-
+    std::cout << "Size of centre-line " << cntLine.size() << "\n";
     if (jointCount)
     {
         for (int i = 0; i < jointCount; i++)

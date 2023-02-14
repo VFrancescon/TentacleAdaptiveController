@@ -42,12 +42,14 @@ set(CameraFuncs "extraFunctions/extraCameraFuncs.cpp")
 set(CompFuncs "extraFunctions/extraCompFuncs.cpp")
 
 add_executable( controllerPrototype "src/ControllerPrototype.cpp")
+add_executable( controllerPrototypePD "src/ControllerPrototypePD.cpp")
 add_executable( AdaptiveController "src/AdaptiveController.cpp")
 add_executable( field3D "src/set3DField.cpp")
 add_executable( th_cal "src/thresholds_cal.cpp")
 add_executable( run_camera "src/run_camera")
 
 target_link_libraries( controllerPrototype ${EIGEN} ${VisionLibs} ${MiddlewareLibs})
+target_link_libraries( controllerPrototypePD ${EIGEN} ${VisionLibs} ${MiddlewareLibs})
 target_link_libraries( AdaptiveController ${EIGEN} ${VisionLibs} ${MiddlewareLibs})
 target_link_libraries(field3D ${MiddlewareLibs})
 target_link_libraries( th_cal ${VisionLibs})
@@ -55,6 +57,8 @@ target_link_libraries( run_camera ${EIGEN} ${VisionLibs})
 
 # target_sources(controllerPrototype PRIVATE ${CameraFuncs} ${CompFuncs})
 target_sources(AdaptiveController PRIVATE ${CameraFuncs} ${CompFuncs})
+target_sources(controllerPrototypePD PRIVATE ${CameraFuncs} ${CompFuncs})
 target_sources(controllerPrototype PRIVATE ${CameraFuncs} ${CompFuncs})
-
+target_sources(run_camera PRIVATE ${CameraFuncs})
+target_sources(th_cal PRIVATE ${CameraFuncs})
 

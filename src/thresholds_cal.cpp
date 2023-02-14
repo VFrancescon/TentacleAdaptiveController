@@ -1,27 +1,6 @@
-#include "opencv2/imgproc.hpp"
-#include "opencv2/highgui.hpp"
-#include "opencv2/videoio.hpp"
-#include <opencv2/video.hpp>
-#include <opencv2/ximgproc.hpp>
-#include <iostream>
-#include <algorithm>
-#include <pylon/PylonIncludes.h>
-#include <eigen3/Eigen/Core>
-#include <opencv2/opencv.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/videoio.hpp>
-#include <sys/stat.h>
-#include <iomanip>
-using namespace cv;
+#include "extraCameraFuncs.hpp"
 
 
-int threshold_low = 131;
-int threshold_high = 255;
-int link_length = 55;
-
-int PYLON_WIDTH = 2048;
-int PYLON_HEIGHT = 1536;
 
 using namespace cv;
 const int max_value_H = 256;
@@ -60,7 +39,7 @@ int main(int argc, char* argv[])
     Pylon::CIntegerParameter width     ( camera.GetNodeMap(), "Width");
     Pylon::CIntegerParameter height    ( camera.GetNodeMap(), "Height");
     Pylon::CEnumParameter pixelFormat  ( camera.GetNodeMap(), "PixelFormat");
-    Pylon::CFloatParameter(camera.GetNodeMap(), "ExposureTime").SetValue(20000.0);
+    Pylon::CFloatParameter(camera.GetNodeMap(), "ExposureTime").SetValue(exposureTime);
     Size frameSize= Size((int)width.GetValue(), (int)height.GetValue());
     int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
     width.TrySetValue(PYLON_WIDTH, Pylon::IntegerValueCorrection_Nearest);
@@ -146,52 +125,4 @@ int main(int argc, char* argv[])
     // cap.release();
     // destroyAllWindows();
     return 0;
-}
-
-Mat IntroducerMask(Mat src){
-    Mat src_GRAY, element;
-
-    // int rows = src.rows * 3 / 8;
-    // int cols = src.cols * 3 / 8;
-    
-    // //make image smaller
-    // resize(src, src, Size(rows,cols), 0,0, INTER_LINEAR);
-    // //create a greyscale copy of the image
-
-
-    cvtColor(src, src_GRAY, COLOR_BGR2GRAY);
-    
-    //apply blur and threshold so that only the tentacle is visible
-    blur(src_GRAY, src_GRAY, Size(5,5));
-    threshold(src_GRAY, src_GRAY, 60, 255, THRESH_BINARY_INV); 
-    
-    element = getStructuringElement(MORPH_DILATE, Size(3,3), Point(1,1) );
-    dilate(src_GRAY, src_GRAY, element);
-
-
-    std::vector<Point> corners;
-    cv::goodFeaturesToTrack(src_GRAY, corners, 6, 0.01, 10);
-    Point Top1Corner(600,600), Top2Corner(600,600), BottomCorner(0,0);
-    
-    for(int i = 0; i < corners.size(); i++){
-        if(Top1Corner.y >= corners[i].y) {
-            Top2Corner = Top1Corner;
-            Top1Corner = corners[i];
-        }
-        if(BottomCorner.y < corners[i].y) BottomCorner = corners[i]; 
-    }
-    std::cout << "Top Corners at: " << Top1Corner << " and " << Top2Corner << "\n";
-    
-    int xCenter = std::min(Top1Corner.x, Top2Corner.x);
-    int yCenter = std::min(Top1Corner.y, Top2Corner.y);
-    int xWidth = abs( Top2Corner.x - Top1Corner.x);
-    int yWidth = xWidth*2;
-
-    Rect rect(Top1Corner.x*0.95, Top1Corner.y-xWidth, xWidth*1.25, yWidth);
-    // Rect rect(RectCenter, Size(xWidth, yWidth));
-    cv::rectangle( src_GRAY, rect, Scalar(0), FILLED);
-
-    cv::bitwise_not(src_GRAY, src_GRAY);
-    return src_GRAY;
-
 }

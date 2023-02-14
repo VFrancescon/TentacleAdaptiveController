@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     strftime(date_string, 50, "%d_%m_%y_%H%M%S", curr_tm);
     std::string date(date_string);
     std::ofstream recordPerformance;
-    recordPerformance.open("../P_Results.csv", std::ios_base::app);
+    recordPerformance.open("../PD_Results.csv", std::ios_base::app);
     recordPerformance << date << "\n";
     recordPerformance << "Step, Error(t), Error(t-1), E_Multiplier, Bx, By, Bz\n";
     
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
      *
      *
      *****************************************************************/
-    std::string outputPath = "C_PROTOTYPE_" + date + ".avi";
+    std::string outputPath = "C_PROTOTYPE_PD_" + date + ".avi";
 
     while (file_exists(outputPath))
     {
@@ -147,17 +147,14 @@ int main(int argc, char *argv[])
     // intr_mask = IntroducerMask(pre_img1);
     intr_mask = IntroducerMask(pre_img);
     int jointsCached = 0;
-    int step_count = 0;
-    int error = 0, prev_error = 0;
+    int error =0, prev_error = 0;
     int d_error = 0;
+    int step_count = 0;
     Point p0 = Point{-2000, 2000};
     double bx_add = 0, bz_add = 0;
-
     recordPerformance << step_count << "," << error << "," <<
         d_error << "," << EMulitplier << "," << field(0) << "," <<
         field(1) << "," << field(2) << "\n";
-
-
     std::cout << "Ready to go. Press enter";
     std::cin.get();
 
@@ -214,6 +211,7 @@ int main(int argc, char *argv[])
         error = meanError(dAngleSlice, angles);
         d_error = abs(error - prev_error);
         prev_error = error;
+        int K_derivative = derivativeAdjustment(d_error, error);
         std::cout << "\n\n---------------------------------------------------------\n\n";
 
         // Controller Logic
@@ -229,29 +227,26 @@ int main(int argc, char *argv[])
 
         if (error < lowError)
         {
-            std::cout << "Victory!\n";            
-            video_out.write(post_img);
-            step_count++;
+            std::cout << "Victory\n";
             recordPerformance << step_count << "," << error << "," <<
                 d_error << "," << EMulitplier << "," << field(0) << "," <<
                 field(1) << "," << field(2) << "\n";
             imshow("Post", post_img);
+            video_out.write(post_img);
             char c = (char)waitKey(0);
             if (c == 27)
                 break;
-            else{
-                
+            else
                 continue;
-                }
         }
         else if (error > lowError && error < upperError)
         {
-            field += field * 0.1 * signFlag;
+            field += field * 0.1 * signFlag * K_derivative;
             std::cout << "Adjusting field\n";
         }
         else if (error > upperError)
         {
-            EMulitplier += signFlag;
+            EMulitplier += (signFlag*K_derivative);
             adjustStiffness(iLinks, EMulitplier);
             field = CalculateField(iLinks, iJoints, iPosVec);
             field = RotateField(field, reconciliationAngles);
@@ -281,7 +276,6 @@ int main(int argc, char *argv[])
     }
     video_out.release();
     mid.~MiddlewareLayer();
-    recordPerformance.close();
     // destroyAllWindows();
     // Pylon::PylonTerminate();
     return 0;
