@@ -1,8 +1,8 @@
 #include "HCoilMiddlewareLib/HCoilMiddlewareLib.hpp"
 #include "ControllerPrototype.hpp"
 
-double upperError = 11;
-double lowError = 7;
+double upperError = 15;
+double lowError = 10;
 
 int main(int argc, char *argv[])
 {
@@ -37,10 +37,10 @@ int main(int argc, char *argv[])
 
     std::vector<int> DesiredAngles(jointNo);
     DesiredAngles[0] = 10;
-    DesiredAngles[1] = 15;
-    DesiredAngles[2] = 15;
-    DesiredAngles[3] = 20;
-    DesiredAngles[4] = 20;
+    DesiredAngles[1] = 20;
+    DesiredAngles[2] = 25;
+    DesiredAngles[3] = 30;
+    DesiredAngles[4] = 30;
     DesiredAngles[jointEff] = 0;
 
     std::vector<Vector3d> Magnetisations(jointNo);
