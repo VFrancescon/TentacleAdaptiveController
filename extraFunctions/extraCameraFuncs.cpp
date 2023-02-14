@@ -2,7 +2,7 @@
 
 int threshold_low = 232;
 int threshold_high = 255;
-int link_lenght = 70;
+int link_lenght = 65;
 
 int PYLON_WIDTH = 1920;
 int PYLON_HEIGHT = 1200;
@@ -82,8 +82,8 @@ std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngle
         double angle = 0;
         for (int k = 0; k < i; k++)
             angle += desiredAngles_[k];
-        int xdiff = (link_lenght)*sin(angle * M_PI / 180);
-        int ydiff = (link_lenght)*cos(angle * M_PI / 180);
+        int xdiff = (link_lenght+10)*sin(angle * M_PI / 180);
+        int ydiff = (link_lenght+10)*cos(angle * M_PI / 180);
         Point pn = Point{(int)(ideal[i - 1].x + xdiff), (int)(ideal[i - 1].y + ydiff)};
         ideal.push_back(pn);
     }

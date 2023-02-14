@@ -2,7 +2,7 @@
 #include "ControllerPrototype.hpp"
 
 double upperError = 15;
-double lowError = 10;
+double lowError = 11;
 
 int main(int argc, char *argv[])
 {
@@ -38,9 +38,9 @@ int main(int argc, char *argv[])
     std::vector<int> DesiredAngles(jointNo);
     DesiredAngles[0] = 10;
     DesiredAngles[1] = 20;
-    DesiredAngles[2] = 25;
-    DesiredAngles[3] = 30;
-    DesiredAngles[4] = 30;
+    DesiredAngles[2] = 20;
+    DesiredAngles[3] = 15;
+    DesiredAngles[4] = 45;
     DesiredAngles[jointEff] = 0;
 
     std::vector<Vector3d> Magnetisations(jointNo);
@@ -235,6 +235,14 @@ int main(int argc, char *argv[])
             recordPerformance << step_count << "," << error << "," <<
                 d_error << "," << EMulitplier << "," << field(0) << "," <<
                 field(1) << "," << field(2) << "\n";
+
+            std::cout << "Final set of joint angles:\n";
+            std::vector<double> finalAngles = computeAngles(Joints);
+            for(auto i: finalAngles){
+                std::cout << i << "\n";
+            }
+            std::cout << "End of operations\n";
+
             imshow("Post", post_img);
             char c = (char)waitKey(0);
             if (c == 27)
