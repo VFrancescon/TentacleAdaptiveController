@@ -286,5 +286,4 @@ int main(int argc, char *argv[])
     // Pylon::PylonTerminate();
     return 0;
 
-    return 0;
 }

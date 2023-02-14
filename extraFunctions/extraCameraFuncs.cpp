@@ -2,7 +2,7 @@
 
 int threshold_low = 232;
 int threshold_high = 255;
-int link_lenght = 65;
+int link_lenght = 70;
 
 int PYLON_WIDTH = 1920;
 int PYLON_HEIGHT = 1200;
@@ -119,16 +119,21 @@ std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point
     // std::reverse(cntLine.begin(), cntLine.end());
 
     std::vector<Point> Joints;
-    int jointCount = (int)cntLine.size() / link_lenght;
-    std::cout << "Size of centre-line " << cntLine.size() << "\n";
+    int jointCount = (int) std::ceil( (float) (cntLine.size() / (float) link_lenght));
+    // std::cout << "Size of centre-line " << cntLine.size() << "\n"
+    // << "JointCount: " << jointCount << "\n";
+
     if (jointCount)
     {
-        for (int i = 0; i < jointCount; i++)
-        {
-            Joints.push_back(cntLine[link_lenght * (i)]);
+        std::vector<Point>::iterator cntLineIterator = cntLine.begin();
+        for(int i = 0; i < jointCount; i++){
+            Joints.push_back(*cntLineIterator);
+            std::advance(cntLineIterator, link_lenght);
         }
+
     }
     std::reverse(Joints.begin(), Joints.end());
+    // std::cout << "Number of joints " << Joints.size() << "\n";
 
     return Joints;
 }
