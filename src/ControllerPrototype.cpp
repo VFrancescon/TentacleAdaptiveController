@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
                 continue;
                 }
         }
-        else if (error > lowError && error < upperError)
+        else if (error > lowError && error <= upperError)
         {
             field += field * 0.1 * signFlag;
             std::cout << "Adjusting field\n";

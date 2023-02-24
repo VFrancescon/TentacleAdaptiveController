@@ -199,9 +199,27 @@ int main(int argc, char *argv[])
         angles = computeAngles(Joints);
         for (int i = 0; i < idealPoints.size() - 1; i++)
         {
-            line(post_img, idealPoints[i], idealPoints[i + 1], Scalar(0, 0, 255));
-            circle(post_img, idealPoints[i], 2, Scalar(255, 0, 0));
+            line(post_img, idealPoints[i], idealPoints[i + 1], Scalar(0, 0, 255), 2);
+            circle(post_img, idealPoints[i], 3, Scalar(0, 255, 0), FILLED);
         }
+
+        // /**
+        //  * @brief DRAW A LEGEND
+        //  * 
+        //  * 
+        //  */
+        // cv::Point TopLeftLegend(0,400);
+        // cv::Point BottomRightLegend(200,450);
+        // cv::Point InnerTopLeftLegend(4,404);
+        // cv::Point InnerBottomRightLegend(196,446);
+        
+        // rectangle(post_img,TopLeftLegend, BottomRightLegend, Scalar(0,0,0), 4);
+        // rectangle(post_img, InnerTopLeftLegend, InnerBottomRightLegend, Scalar(255,255,255), 1);
+        
+        // putText(post_img, "Text1", 
+        //     TopLeftLegend+Point(4, 25), FONT_HERSHEY_SIMPLEX, 
+        //     0.5, Scalar(0,0,0));
+
 
         // if(JointsObserved != jointsCached){
 
@@ -223,6 +241,7 @@ int main(int argc, char *argv[])
         // Scenario 3. e > HighS -> K += signFlag
         int signFlag = (error < 0) ? -1 : 1;
         std::cout << "Error " << error << "\n";
+        std::cout << "Kd " << K_derivative << "\n";
         error = abs(error);
 
         if (error < lowError)
@@ -246,7 +265,7 @@ int main(int argc, char *argv[])
             else
                 continue;
         }
-        else if (error > lowError && error < upperError)
+        else if (error > lowError && error <= upperError)
         {
             field += field * 0.1 * signFlag * K_derivative;
             std::cout << "Adjusting field\n";
@@ -287,5 +306,5 @@ int main(int argc, char *argv[])
     // Pylon::PylonTerminate();
     return 0;
 
-    return 0;
+
 }
