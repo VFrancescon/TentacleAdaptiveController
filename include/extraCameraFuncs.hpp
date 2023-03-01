@@ -84,6 +84,16 @@ std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point
  * @return double average.
  */
 template <typename T>
-double avgVect(std::vector<T> inputVec);
+inline double avgVect(std::vector<T> inputVec)
+{
+    double avg, sum = 0;
+
+    for (auto i : inputVec)
+    {
+        sum += i;
+    }
+    avg = sum / inputVec.size();
+    return avg;
+}
 
 #endif

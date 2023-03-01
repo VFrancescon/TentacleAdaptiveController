@@ -33,7 +33,42 @@ inline int meanError(std::vector<double> &desired, std::vector<double> &observed
     return (int)(d_error );
 }
 
+inline int pieceWiseError(std::vector<double> desired, std::vector<double> observed){
+    double avg;
+    int error;
+    // desired.pop_back();
+    std::vector<double> diff(desired.size());
+    if(desired.size() == observed.size()){
+        for(int i = 0; i < desired.size(); i++){
+            diff[i] = desired[i] - observed[i];
+        }
+        avg = avgVect(diff);
+        // std::cout << "pieceWise precasting: " << avg << "\n";
+        return (int) avg;
+    } else {
+        std::cout << "piecwise. No matching sizes\n";
+        std::cout << "Size of desired angles: " << desired.size() << "\nSize of observed angles: " << observed.size() << "\n";
+        return 0;}
+}
 
+inline int pieceWiseErrorWeighted(std::vector<double> desired, std::vector<double> observed){
+    double avg;
+    int error;
+    // desired.pop_back();
+    std::vector<double> diff(desired.size());
+    if(desired.size() == observed.size()){
+        for(int i = 0; i < desired.size(); i++){
+            diff[i] = desired[i] - observed[i];
+            diff[i] *= (i+1);
+        }
+        avg = avgVect(diff);
+        // std::cout << "pieceWiseWeighted precasting: " << avg << "\n";
+        return (int) avg;
+    } else {
+        std::cout << "weighted. No matching sizes\n";
+        std::cout << "Size of desired angles: " << desired.size() << "\nSize of observed angles: " << observed.size() << "\n";
+        return 0;}
+}
 
 inline int derivativeAdjustment(double d_error, int error){
     //The higher the error, the smaller the return value

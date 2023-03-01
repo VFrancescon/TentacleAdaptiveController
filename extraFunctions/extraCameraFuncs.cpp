@@ -38,35 +38,26 @@ bool yWiseSort(Point lhs, Point rhs)
     return (lhs.y > rhs.y);
 }
 
-template <typename T>
-double avgVect(std::vector<T> inputVec)
-{
-    double avg, sum = 0;
-
-    for (auto i : inputVec)
-    {
-        sum += i;
-    }
-    avg = sum / inputVec.size();
-    return avg;
-}
-
 std::vector<double> computeAngles(std::vector<Point> Joints)
 {
     std::vector<double> angles;
     std::vector<Point> vects;
-
+    std::vector<int> angleSign;
     Joints.insert(Joints.begin(), Point(Joints[0].x, 0));
     for (int i = 1; i < Joints.size(); i++)
     {
         vects.push_back(Point{Joints[i].x - Joints[i - 1].x, Joints[i].y - Joints[i - 1].y});
+        int dx, dy;
+        dx = Joints[i].x - Joints[i - 1].x;
+        if(dx < 0) angleSign.push_back(-1);
+        else angleSign.push_back(1);
     }
     for (int i = 0; i < vects.size() - 1; i++)
     {
         double dproduct = vects[i].dot(vects[i + 1]);
         double nproduct = norm(vects[i]) * norm(vects[i + 1]);
         double th = acos(dproduct / nproduct);
-        angles.push_back(th * 180 / M_PI);
+        angles.push_back( (th * 180 / M_PI) * angleSign[i] );
     }
 
     return angles;
