@@ -47,17 +47,23 @@ std::vector<double> computeAngles(std::vector<Point> Joints)
     for (int i = 1; i < Joints.size(); i++)
     {
         vects.push_back(Point{Joints[i].x - Joints[i - 1].x, Joints[i].y - Joints[i - 1].y});
-        int dx, dy;
-        dx = Joints[i].x - Joints[i - 1].x;
-        if(dx < 0) angleSign.push_back(-1);
-        else angleSign.push_back(1);
+        // int dx, dy;
+        // dx = Joints[i].x - Joints[i - 1].x;
+        // if(dx < 0) angleSign.push_back(-1);
+        // else angleSign.push_back(1);
     }
+
     for (int i = 0; i < vects.size() - 1; i++)
     {
-        double dproduct = vects[i].dot(vects[i + 1]);
-        double nproduct = norm(vects[i]) * norm(vects[i + 1]);
-        double th = acos(dproduct / nproduct);
-        angles.push_back( (th * 180 / M_PI) * angleSign[i] );
+        // a = atan2d(x1*y2 -y1*x2, x1*x2 + y1*y2)
+        // method taken from https://uk.mathworks.com/matlabcentral/answers/180131-how-can-i-find-the-angle-between-two-vectors-including-directional-information
+        //generally that is atan(cross(v1,v2) / dot(v1,v2))
+        double th = atan2(vects[i].x * vects[i+1].y - vects[i].y * vects[i+1].x,
+                          vects[i].x * vects[i+1].x + vects[i].y * vects[i+1].y);
+        // double dproduct = vects[i].dot(vects[i + 1]);
+        // double nproduct = norm(vects[i]) * norm(vects[i + 1]);
+        // double th = acos(dproduct / nproduct);
+        angles.push_back((th * 180 / M_PI));
     }
 
     return angles;
@@ -73,8 +79,8 @@ std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngle
         double angle = 0;
         for (int k = 0; k < i; k++)
             angle += desiredAngles_[k];
-        int xdiff = (link_lenght+10)*sin(angle * M_PI / 180);
-        int ydiff = (link_lenght+10)*cos(angle * M_PI / 180);
+        int xdiff = (link_lenght + 10) * sin(angle * M_PI / 180);
+        int ydiff = (link_lenght + 10) * cos(angle * M_PI / 180);
         Point pn = Point{(int)(ideal[i - 1].x + xdiff), (int)(ideal[i - 1].y + ydiff)};
         ideal.push_back(pn);
     }
@@ -110,18 +116,18 @@ std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point
     // std::reverse(cntLine.begin(), cntLine.end());
 
     std::vector<Point> Joints;
-    int jointCount = (int) std::ceil( (float) (cntLine.size() / (float) link_lenght));
+    int jointCount = (int)std::ceil((float)(cntLine.size() / (float)link_lenght));
     // std::cout << "Size of centre-line " << cntLine.size() << "\n"
     // << "JointCount: " << jointCount << "\n";
 
     if (jointCount)
     {
         std::vector<Point>::iterator cntLineIterator = cntLine.begin();
-        for(int i = 0; i < jointCount; i++){
+        for (int i = 0; i < jointCount; i++)
+        {
             Joints.push_back(*cntLineIterator);
             std::advance(cntLineIterator, link_lenght);
         }
-
     }
     std::reverse(Joints.begin(), Joints.end());
     // std::cout << "Number of joints " << Joints.size() << "\n";
