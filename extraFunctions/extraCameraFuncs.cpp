@@ -58,8 +58,8 @@ std::vector<double> computeAngles(std::vector<Point> Joints)
         // a = atan2d(x1*y2 -y1*x2, x1*x2 + y1*y2)
         // method taken from https://uk.mathworks.com/matlabcentral/answers/180131-how-can-i-find-the-angle-between-two-vectors-including-directional-information
         //generally that is atan(cross(v1,v2) / dot(v1,v2))
-        double th = atan2(vects[i].x * vects[i+1].y - vects[i].y * vects[i+1].x,
-                          vects[i].x * vects[i+1].x + vects[i].y * vects[i+1].y);
+        double th = atan2(vects[i+1].x * vects[i].y - vects[i+1].y * vects[i].x,
+                          vects[i+1].x * vects[i].x + vects[i+1].y * vects[i].y);
         // double dproduct = vects[i].dot(vects[i + 1]);
         // double nproduct = norm(vects[i]) * norm(vects[i + 1]);
         // double th = acos(dproduct / nproduct);

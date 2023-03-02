@@ -7,11 +7,11 @@ int main(int argc, char* argv[]){
     int jointEff = 5;
     int jointNo = jointEff + 1;
     std::vector<int> DesiredAngles(jointNo);
-    DesiredAngles[0] = 10;
-    DesiredAngles[1] = 15;
+    DesiredAngles[0] = 20;
+    DesiredAngles[1] = 20;
     DesiredAngles[2] = 30;
-    DesiredAngles[3] = 25;
-    DesiredAngles[4] = 20;
+    DesiredAngles[3] = 45;
+    DesiredAngles[4] = 30;
     DesiredAngles[jointEff] = 0;
 
     /**************************************************************
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]){
         std::cout << "piecewiseweighted: " << errorPiecewiseWeighted << "\n";
 
         imshow("Post", post_img);
-        char c = (char)waitKey(0);
+        char c = (char)waitKey(5e2);
         if (c == 27)
             break;
     }
