@@ -203,22 +203,32 @@ int main(int argc, char *argv[])
             circle(post_img, idealPoints[i], 3, Scalar(0, 255, 0), FILLED);
         }
 
-        // /**
-        //  * @brief DRAW A LEGEND
-        //  * 
-        //  * 
-        //  */
-        // cv::Point TopLeftLegend(0,400);
-        // cv::Point BottomRightLegend(200,450);
-        // cv::Point InnerTopLeftLegend(4,404);
-        // cv::Point InnerBottomRightLegend(196,446);
-        
-        // rectangle(post_img,TopLeftLegend, BottomRightLegend, Scalar(0,0,0), 4);
-        // rectangle(post_img, InnerTopLeftLegend, InnerBottomRightLegend, Scalar(255,255,255), 1);
-        
-        // putText(post_img, "Text1", 
-        //     TopLeftLegend+Point(4, 25), FONT_HERSHEY_SIMPLEX, 
-        //     0.5, Scalar(0,0,0));
+        /**
+         * @brief DRAW A LEGEND
+         */
+        cv::Point TopLeftLegend(0, 390);
+        cv::Point BottomRightLegend(230, 450);
+        cv::Point InnerTopLeftLegend(4, 404);
+        cv::Point InnerBottomRightLegend(196, 446);
+
+        rectangle(post_img, TopLeftLegend, BottomRightLegend, Scalar(0, 0, 0), 4);
+        rectangle(post_img, InnerTopLeftLegend, InnerBottomRightLegend, Scalar(255, 255, 255), 1);
+
+        putText(post_img, "Detected",
+                TopLeftLegend + Point(84, 26), FONT_HERSHEY_DUPLEX,
+                1, Scalar(0, 0, 0));
+        putText(post_img, "Desired",
+                TopLeftLegend + Point(84, 52), FONT_HERSHEY_DUPLEX,
+                1, Scalar(0, 0, 0));
+        //blue rect. Desired
+        rectangle(post_img, TopLeftLegend + Point(5, 12), TopLeftLegend + Point(80, 22),
+                  Scalar(255, 0, 0), FILLED);
+        //red rect. Detected
+        rectangle(post_img, TopLeftLegend + Point(5, 38), TopLeftLegend + Point(80, 48),
+                  Scalar(0, 0, 255), FILLED);
+        /**
+         * @brief DRAW A LEGEND
+         */
 
 
         // if(JointsObserved != jointsCached){
