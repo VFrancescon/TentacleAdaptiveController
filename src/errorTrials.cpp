@@ -9,11 +9,10 @@ int main(int argc, char* argv[]){
     std::vector<int> DesiredAngles(jointNo);
     DesiredAngles[0] = 20;
     DesiredAngles[1] = 20;
-    DesiredAngles[2] = 30;
+    DesiredAngles[2] = 20;
     DesiredAngles[3] = 45;
     DesiredAngles[4] = 30;
     DesiredAngles[jointEff] = 0;
-
     /**************************************************************
      *
      *

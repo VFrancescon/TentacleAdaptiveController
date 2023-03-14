@@ -36,11 +36,11 @@ int main(int argc, char *argv[])
     std::vector<Vector3d> AppliedFields;
 
     std::vector<int> DesiredAngles(jointNo);
-    DesiredAngles[0] = 20;
-    DesiredAngles[1] = 20;
-    DesiredAngles[2] = 20;
+    DesiredAngles[0] = 0;
+    DesiredAngles[1] = 10;
+    DesiredAngles[2] = 30;
     DesiredAngles[3] = 45;
-    DesiredAngles[4] = 30;
+    DesiredAngles[4] = 45;
     DesiredAngles[jointEff] = 0;
 
     std::vector<Vector3d> Magnetisations(jointNo);

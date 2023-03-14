@@ -1,6 +1,6 @@
 #include "extraCameraFuncs.hpp"
 
-int threshold_low = 232;
+int threshold_low = 225;
 int threshold_high = 255;
 int link_lenght = 65;
 int JointNumber = 6;
