@@ -3,6 +3,7 @@
 int threshold_low = 232;
 int threshold_high = 255;
 int link_lenght = 65;
+int JointNumber = 6;
 
 int PYLON_WIDTH = 1920;
 int PYLON_HEIGHT = 1200;
@@ -72,7 +73,6 @@ std::vector<double> computeAngles(std::vector<Point> Joints)
 std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngles_)
 {
     std::vector<Point> ideal;
-
     ideal.push_back(p0);
     for (int i = 1; i < desiredAngles_.size(); i++)
     {
@@ -116,14 +116,15 @@ std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point
     // std::reverse(cntLine.begin(), cntLine.end());
 
     std::vector<Point> Joints;
-    int jointCount = (int)std::ceil((float)(cntLine.size() / (float)link_lenght));
+    // int jointCount = (int)std::ceil((float)(cntLine.size() / (float)link_lenght));
+    link_lenght = (int) std::ceil( (float) cntLine.size() / (float) JointNumber);
     // std::cout << "Size of centre-line " << cntLine.size() << "\n"
     // << "JointCount: " << jointCount << "\n";
 
-    if (jointCount)
+    if (JointNumber)
     {
         std::vector<Point>::iterator cntLineIterator = cntLine.begin();
-        for (int i = 0; i < jointCount; i++)
+        for (int i = 0; i < JointNumber; i++)
         {
             Joints.push_back(*cntLineIterator);
             std::advance(cntLineIterator, link_lenght);

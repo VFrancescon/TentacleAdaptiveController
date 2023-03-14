@@ -1,8 +1,8 @@
 #include "HCoilMiddlewareLib/HCoilMiddlewareLib.hpp"
 #include "ControllerPrototype.hpp"
 
-double upperError = 15;
-double lowError = 11;
+double upperError = 65;
+double lowError = 58;
 
 int main(int argc, char *argv[])
 {
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{0, 0, 180};
+    Vector3d reconciliationAngles = Vector3d{180, 0, 180};
     double EMulitplier = 5;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
@@ -36,11 +36,11 @@ int main(int argc, char *argv[])
     std::vector<Vector3d> AppliedFields;
 
     std::vector<int> DesiredAngles(jointNo);
-    DesiredAngles[0] = 10;
+    DesiredAngles[0] = 20;
     DesiredAngles[1] = 20;
     DesiredAngles[2] = 20;
-    DesiredAngles[3] = 15;
-    DesiredAngles[4] = 45;
+    DesiredAngles[3] = 45;
+    DesiredAngles[4] = 30;
     DesiredAngles[jointEff] = 0;
 
     std::vector<Vector3d> Magnetisations(jointNo);
@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
         std::vector<double> angles;
         std::vector<double> desiredAngles_ = std::vector<double>(DesiredAngles.begin(), DesiredAngles.end() - 1);
         std::vector<Point> idealPoints;
-        if (p0 == Point{-2000, 2000})
+        // if (p0 == Point{-2000, 2000})
             p0 = Joints[0];
 
         idealPoints = computeIdealPoints(p0, desiredAngles_);
@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
         jointsCached = JointsObserved;
         std::vector<double> dAngleSlice = std::vector<double>(desiredAngles_.end() - angles.size(), desiredAngles_.end());
         // std::vector<double> dAngleSlice = desiredAngles_;
-        error = meanError(dAngleSlice, angles);
+        error = pieceWiseErrorWeighted(dAngleSlice, angles);
         d_error = abs(error - prev_error);
         prev_error = error;
         int K_derivative = derivativeAdjustment(d_error, error);
@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
 
         imshow("Post", post_img);
         video_out.write(post_img);
-        char c = (char)waitKey(10e2);
+        char c = (char)waitKey(20e2);
         if (c == 27)
             break;
     }
