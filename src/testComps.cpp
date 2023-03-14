@@ -20,10 +20,10 @@ int main(int argc, char *argv[])
     std::vector<Vector3d> AppliedFields;
 
     std::vector<double> DesiredAngles(jointNo);
-    DesiredAngles[0] = 0;
-    DesiredAngles[1] = 10;
-    DesiredAngles[2] = 30;
-    DesiredAngles[3] = 45;
+    DesiredAngles[0] = -20;
+    DesiredAngles[1] = 30;
+    DesiredAngles[2] = 10;
+    DesiredAngles[3] = 30;
     DesiredAngles[4] = 45;
     DesiredAngles[jointEff] = 0;
 

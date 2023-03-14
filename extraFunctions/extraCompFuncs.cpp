@@ -332,6 +332,8 @@ Vector3d CalculateField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
     // MatrixXd LHS = KStacked * AnglesStacked ;
 
     // std::cout <<"Solve breaks\n";s
+    std::cout << "LHS\n" << LHS << "\n";
+    std::cout << "RHS\n" << RHS << "\n";
     MatrixXd solution = RHS.completeOrthogonalDecomposition().solve(LHS);
     return solution * 1000;
 }
