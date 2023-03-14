@@ -79,10 +79,10 @@ void DirectKinematics(std::vector<PosOrientation> &iPosVec, std::vector<Joint> &
                                              AngleAxisd(iJoints[i].q(0), Vector3d::UnitX()) *
                                              iJoints[i].Rotation * Vector3d::UnitZ();
     }
-    std::cout << "Positional bits\n";
-    for(auto i: iPosVec){
-        std::cout << i.p << "\n";
-    }
+    // std::cout << "Positional bits\n";
+    // for(auto i: iPosVec){
+    //     std::cout << i.p << "\n";
+    // }
     return;
 }
 
@@ -288,8 +288,8 @@ Vector3d CalculateField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
     // std::cout << "Jacobian breaks\n";
     Jacobian = EvaluateJacobian(iPosVec);
 
-    std::cout << "Jacobian TL:\n"
-              << Jacobian.topLeftCorner(6, 3) << "\n";
+    // std::cout << "Jacobian TL:\n"
+    //           << Jacobian.topLeftCorner(6, 3) << "\n";
 
     Jt = Jacobian.transpose();
 
@@ -332,8 +332,8 @@ Vector3d CalculateField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
     // MatrixXd LHS = KStacked * AnglesStacked ;
 
     // std::cout <<"Solve breaks\n";s
-    std::cout << "LHS\n" << LHS << "\n";
-    std::cout << "RHS\n" << RHS << "\n";
+    // std::cout << "LHS\n" << LHS << "\n";
+    // std::cout << "RHS\n" << RHS << "\n";
     MatrixXd solution = RHS.completeOrthogonalDecomposition().solve(LHS);
     return solution * 1000;
 }

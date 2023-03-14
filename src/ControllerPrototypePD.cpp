@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
     // timesteps are equal to joint no
     int timesteps = jointEff;
     Vector3d reconciliationAngles = Vector3d{180, 0, 180};
-    double EMulitplier = 5;
+    double EMulitplier = 1;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
      *                                               *
@@ -35,11 +35,11 @@ int main(int argc, char *argv[])
      * * * * * * * * * * * * * * * * * * * * * * * * */
     std::vector<Vector3d> AppliedFields;
 
-    std::vector<int> DesiredAngles(jointNo);
-    DesiredAngles[0] = 0;
-    DesiredAngles[1] = 10;
-    DesiredAngles[2] = 30;
-    DesiredAngles[3] = 45;
+    std::vector<double> DesiredAngles(jointNo);
+    DesiredAngles[0] = -20;
+    DesiredAngles[1] = 30;
+    DesiredAngles[2] = 10;
+    DesiredAngles[3] = 30;
     DesiredAngles[4] = 45;
     DesiredAngles[jointEff] = 0;
 
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < jointNo; i++)
     {
-        iJoints[i].q = Vector3d(0, DesiredAngles[i], 0);
+        iJoints[i].q = Vector3d(0, DesiredAngles[i] * M_PI / 180, 0);
         iJoints[i].LocMag = Magnetisations[i];
     }
 
@@ -81,6 +81,8 @@ int main(int argc, char *argv[])
      *
      *****************************************************************/
     MiddlewareLayer mid(true);
+    std::cout << "Press enter to apply field:";
+    std::cin.get();
     mid.set3DField(field);
 
     /**************************************************************
@@ -306,7 +308,7 @@ int main(int argc, char *argv[])
 
         imshow("Post", post_img);
         video_out.write(post_img);
-        char c = (char)waitKey(20e2);
+        char c = (char)waitKey(0);
         if (c == 27)
             break;
     }
