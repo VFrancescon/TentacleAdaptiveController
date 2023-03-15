@@ -96,4 +96,7 @@ inline double avgVect(std::vector<T> inputVec)
     return avg;
 }
 
+
+std::vector< Point> equally_spaced_points(const std::vector< Point>& cntLine, int jointNumber);
+
 #endif
