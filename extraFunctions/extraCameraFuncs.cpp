@@ -105,7 +105,7 @@ std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngle
 
 std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point>> &contours)
 {
-    std::cout << "---------------\n\nExtafuncs version\n";
+    // std::cout << "---------------\n\nExtafuncs version\n";
     Mat contours_bin;
     // std::vector<std::vector<Point> > contours;
     std::vector<Vec4i> hierarchy;
@@ -135,10 +135,10 @@ std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point
     // link_lenght = 60;
     link_lenght = std::ceil( 
         (float) (cntLine.size()-1) / (float) JointNumber
-    ) +8;
-    std::cout << "Size of centre-line " << cntLine.size() << "\n"
-    << "JointCount: " << JointNumber<< "\n"
-    << "Link lenght " << link_lenght << "\n";
+    ) ;
+    // std::cout << "Size of centre-line " << cntLine.size() << "\n"
+    // << "JointCount: " << JointNumber<< "\n"
+    // << "Link lenght " << link_lenght << "\n";
 
     if (JointNumber)
     {
@@ -200,7 +200,7 @@ std::vector<cv::Point> equally_spaced_points(const std::vector<cv::Point>& cntLi
     std::vector<cv::Point>::const_iterator it = cntLine.begin();
     for (int i = 0; i < jointNumber; ++i) {
         joints.push_back(*it);
-        std::cout << "Adding the point of interest: \n" << *it << "\n";
+        // std::cout << "Adding the point of interest: \n" << *it << "\n";
 
         if (std::distance(it, cntLine.end()) <= step) {
             break;

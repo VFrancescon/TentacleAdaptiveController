@@ -60,9 +60,9 @@ int main(int argc, char* argv[]){
         {
             break;
         }
-        resize(post_img, post_img, Size(rcols,rrows), INTER_LINEAR);
+        resize(post_img, post_img, Size(rcols, rrows), INTER_LINEAR);
         Mat post_img_grey, post_img_th;
-        Mat post_img_masked = Mat::zeros(Size(rcols,rrows), CV_8UC1);
+        Mat post_img_masked = Mat::zeros(Size(rcols, rrows), CV_8UC1);
 
         cvtColor(post_img, post_img_grey, COLOR_BGR2GRAY);
         blur(post_img_grey, post_img_grey, Size(5, 5));
@@ -75,45 +75,71 @@ int main(int argc, char* argv[]){
 
         Joints = findJoints(post_img_masked, contours);
         int JointsObserved = Joints.size();
-
         for (auto i : Joints)
         {
             circle(post_img, i, 4, Scalar(255, 0, 0), FILLED);
         }
         drawContours(post_img, contours, -1, Scalar(255, 255, 0));
-
         std::vector<double> angles;
-        std::vector<double> desiredAngles_ = std::vector<double>(DesiredAngles.end() - JointsObserved - 1, DesiredAngles.end() - 1);
+        std::vector<double> desiredAngles_ = std::vector<double>(DesiredAngles.begin(), DesiredAngles.end() - 1);
         std::vector<Point> idealPoints;
-        if (p0 == Point{-2000, 2000})
+        // if (p0 == Point{-2000, 2000})
             p0 = Joints[0];
 
         idealPoints = computeIdealPoints(p0, desiredAngles_);
         angles = computeAngles(Joints);
         for (int i = 0; i < idealPoints.size() - 1; i++)
         {
-            line(post_img, idealPoints[i], idealPoints[i + 1], Scalar(0, 0, 255));
-            circle(post_img, idealPoints[i], 2, Scalar(255, 0, 0));
+            line(post_img, idealPoints[i], idealPoints[i + 1], Scalar(0, 0, 255), 2);
+            circle(post_img, idealPoints[i], 3, Scalar(0, 255, 0), FILLED);
         }
+
+        /**
+         * @brief DRAW A LEGEND
+         */
+        cv::Point TopLeftLegend(0, 390);
+        cv::Point BottomRightLegend(230, 450);
+        cv::Point InnerTopLeftLegend(4, 404);
+        cv::Point InnerBottomRightLegend(196, 446);
+
+        rectangle(post_img, TopLeftLegend, BottomRightLegend, Scalar(0, 0, 0), 4);
+        rectangle(post_img, InnerTopLeftLegend, InnerBottomRightLegend, Scalar(255, 255, 255), 1);
+
+        putText(post_img, "Detected",
+                TopLeftLegend + Point(84, 26), FONT_HERSHEY_DUPLEX,
+                1, Scalar(0, 0, 0));
+        putText(post_img, "Desired",
+                TopLeftLegend + Point(84, 52), FONT_HERSHEY_DUPLEX,
+                1, Scalar(0, 0, 0));
+        //blue rect. Desired
+        rectangle(post_img, TopLeftLegend + Point(5, 12), TopLeftLegend + Point(80, 22),
+                  Scalar(255, 0, 0), FILLED);
+        //red rect. Detected
+        rectangle(post_img, TopLeftLegend + Point(5, 38), TopLeftLegend + Point(80, 48),
+                  Scalar(0, 0, 255), FILLED);
+        /**
+         * @brief DRAW A LEGEND
+         */
+
 
         // if(JointsObserved != jointsCached){
 
-        int jointsCached = JointsObserved;
         std::vector<double> dAngleSlice = std::vector<double>(desiredAngles_.end() - angles.size(), desiredAngles_.end());
         // std::vector<double> dAngleSlice = desiredAngles_;
-        int error = meanError(dAngleSlice, angles);
-        int errorPiecewise = pieceWiseError(dAngleSlice, angles);
-        int errorPiecewiseWeighted = pieceWiseErrorWeighted(dAngleSlice, angles);
+        int error = pieceWiseErrorWeighted(dAngleSlice, angles);
+        int pointError = positionWiseError(idealPoints, Joints);
+        std::cout << "\n\n---------------------------------------------------------\n\n";
 
-        std::cout << "--------------------\nError Dump\n";
-        std::cout << "DesiredAngles vs Observed Angles\n";
-        for(int i = 0; i < dAngleSlice.size(); i++){
-            std::cout << dAngleSlice[i] << " - " << angles[i] << "\n";
-        }
-
-        std::cout << "meanError: " << error << "\n";
-        std::cout << "piecewise: " << errorPiecewise << "\n";
-        std::cout << "piecewiseweighted: " << errorPiecewiseWeighted << "\n";
+        // Controller Logic
+        // if e < 0: signFlag = -1
+        // else signFlag = 1
+        // then e = abs(e)
+        // Scenario 1. e < LowS -> Do Nothing
+        // Scenario 2. LowS < e < HighS -> Field + P*signFlag
+        // Scenario 3. e > HighS -> K += signFlag
+        int signFlag = (error < 0) ? -1 : 1;
+        std::cout << "Piecewise Error " << error << "\n";
+        std::cout << "Pointwise Error " << pointError << "\n";
 
         imshow("Post", post_img);
         char c = (char)waitKey(5e2);

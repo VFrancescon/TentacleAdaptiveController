@@ -1,8 +1,8 @@
 #include "HCoilMiddlewareLib/HCoilMiddlewareLib.hpp"
 #include "ControllerPrototype.hpp"
 
-double upperError = 65;
-double lowError = 58;
+double upperError = 80;
+double lowError = 50;
 
 int main(int argc, char *argv[])
 {
@@ -81,9 +81,9 @@ int main(int argc, char *argv[])
      *
      *****************************************************************/
     MiddlewareLayer mid(true);
-    std::cout << "Press enter to apply field:";
-    std::cin.get();
-    mid.set3DField(field);
+    // std::cout << "Press enter to apply field:";
+    // std::cin.get();
+    // mid.set3DField(field);
 
     /**************************************************************
      *
@@ -153,7 +153,8 @@ int main(int argc, char *argv[])
     int d_error = 0;
     int step_count = 0;
     Point p0 = Point{-2000, 2000};
-    double bx_add = 0, bz_add = 0;
+    bool firstRun = true;
+    int baseline_error = 0;
     recordPerformance << step_count << "," << error << "," <<
         d_error << "," << EMulitplier << "," << field(0) << "," <<
         field(1) << "," << field(2) << "\n";
@@ -238,11 +239,18 @@ int main(int argc, char *argv[])
         jointsCached = JointsObserved;
         std::vector<double> dAngleSlice = std::vector<double>(desiredAngles_.end() - angles.size(), desiredAngles_.end());
         // std::vector<double> dAngleSlice = desiredAngles_;
-        error = pieceWiseErrorWeighted(dAngleSlice, angles);
-        d_error = abs(error - prev_error);
+        error = positionWiseError(idealPoints, Joints) - baseline_error;
+        d_error = prev_error - error;
         prev_error = error;
-        int K_derivative = derivativeAdjustment(d_error, error);
+        int K_derivative = derivativeAdjustment( abs(d_error), error);
         std::cout << "\n\n---------------------------------------------------------\n\n";
+
+        if(firstRun){
+            baseline_error = error;
+            lowError -= baseline_error;
+            upperError -= baseline_error;
+            firstRun = false;
+        }
 
         // Controller Logic
         // if e < 0: signFlag = -1
@@ -251,9 +259,11 @@ int main(int argc, char *argv[])
         // Scenario 1. e < LowS -> Do Nothing
         // Scenario 2. LowS < e < HighS -> Field + P*signFlag
         // Scenario 3. e > HighS -> K += signFlag
-        int signFlag = (error < 0) ? -1 : 1;
-        std::cout << "Error " << error << "\n";
+        int signFlag = (error < 0 | d_error < 0) ? -1 : 1;
+        std::cout << "Baseline " << baseline_error;
+        std::cout << " Error " << error << " ";
         std::cout << "Kd " << K_derivative << "\n";
+        std::cout << "signFlag " << signFlag << "\n";
         error = abs(error);
 
         if (error < lowError)
@@ -279,17 +289,19 @@ int main(int argc, char *argv[])
         }
         else if (error > lowError && error <= upperError)
         {
-            field += field * 0.1 * signFlag * K_derivative;
             std::cout << "Adjusting field\n";
+            std::cout << "Operation explicitly: \n" << "field * " << 
+             0.1 << " * " << signFlag << " * " <<  K_derivative << "\n";
+            field += field * 0.1 * signFlag * K_derivative;
         }
         else if (error > upperError)
         {
             EMulitplier += (signFlag*K_derivative);
+            std::cout << "Adjusting E to "<< EMulitplier << "\n";
             adjustStiffness(iLinks, EMulitplier);
             field = CalculateField(iLinks, iJoints, iPosVec);
             field = RotateField(field, reconciliationAngles);
             field(1) = 0;
-            std::cout << "Adjusting E\n";
         }
 
         std::cout << "E: " << EMulitplier << " applied field:\n"

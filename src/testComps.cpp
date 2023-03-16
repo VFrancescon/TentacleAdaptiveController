@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
     int timesteps = jointEff;
     Vector3d reconciliationAngles = Vector3d{180, 0, 180};
 
-    double EMulitplier = 1;
+    double EMulitplier = 10;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
      *                                               *
