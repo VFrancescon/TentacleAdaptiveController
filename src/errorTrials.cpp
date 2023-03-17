@@ -7,7 +7,7 @@ int main(int argc, char* argv[]){
     int jointEff = 5;
     int jointNo = jointEff + 1;
     std::vector<int> DesiredAngles(jointNo);
-    DesiredAngles[0] = -20;
+    DesiredAngles[0] = 0;
     DesiredAngles[1] = 30;
     DesiredAngles[2] = 10;
     DesiredAngles[3] = 30;

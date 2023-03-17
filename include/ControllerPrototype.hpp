@@ -78,6 +78,7 @@ inline int positionWiseError(std::vector<Point> idealPoints, std::vector<Point> 
         int ithxDiff = observedPoints[i].x - idealPoints[i].x;
         int ithyDiff = observedPoints[i].y - idealPoints[i].y;
         double ithDistance = std::sqrt(ithxDiff*ithxDiff + ithyDiff*ithyDiff);
+        std::cout << "i : " << i << " distance " << ithDistance << "\n";
         scaledValues.push_back(ithDistance*i+1);
     }
     avg = avgVect(scaledValues);
@@ -92,8 +93,8 @@ inline int derivativeAdjustment(double d_error, int error){
     //  2. int signFlag
 
     int scaledDiff = (int) ( d_error / (double) error * 100);
-    std::cout << "d_error: " << d_error << " - error: " << error 
-        << " = scaledDiff: " << scaledDiff << "\n";
+    // std::cout << "d_error: " << d_error << " - error: " << error 
+    std::cout << " scaledDiff: " << scaledDiff << "\n";
     switch(scaledDiff){
         case 0 ... 20: 
             // std::cout << "Kd = " << 4 << "\n";

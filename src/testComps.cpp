@@ -11,8 +11,11 @@ int main(int argc, char *argv[])
     // timesteps are equal to joint no
     int timesteps = jointEff;
     Vector3d reconciliationAngles = Vector3d{180, 0, 180};
+    double EMulitplier = 15;
 
-    double EMulitplier = 10;
+    if(argc  == 2){
+        EMulitplier = std::stod( argv[1] );
+    }
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
      *                                               *
@@ -21,7 +24,7 @@ int main(int argc, char *argv[])
     std::vector<Vector3d> AppliedFields;
 
     std::vector<double> DesiredAngles(jointNo);
-    DesiredAngles[0] = -20;
+    DesiredAngles[0] = 0;
     DesiredAngles[1] = 30;
     DesiredAngles[2] = 10;
     DesiredAngles[3] = 30;

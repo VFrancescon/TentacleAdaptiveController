@@ -1,16 +1,16 @@
 #include "HCoilMiddlewareLib/HCoilMiddlewareLib.hpp"
 #include "ControllerPrototype.hpp"
 
-double upperError = 80;
-double lowError = 50;
+double upperError = 60;
+double lowError = 25;
 
 int main(int argc, char *argv[])
 {
     /**
      * Get today's date
-    */
+     */
     time_t curr_time;
-    tm * curr_tm;
+    tm *curr_tm;
     time(&curr_time);
     curr_tm = localtime(&curr_time);
     char date_string[100];
@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     recordPerformance.open("../PD_Results.csv", std::ios_base::app);
     recordPerformance << date << "\n";
     recordPerformance << "Step, Error(t), Error(t-1), E_Multiplier, Bx, By, Bz\n";
-    
+
     int jointEff = 5;
     int jointNo = jointEff + 1;
 
@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     std::vector<Vector3d> AppliedFields;
 
     std::vector<double> DesiredAngles(jointNo);
-    DesiredAngles[0] = -20;
+    DesiredAngles[0] = 0;
     DesiredAngles[1] = 30;
     DesiredAngles[2] = 10;
     DesiredAngles[3] = 30;
@@ -71,7 +71,8 @@ int main(int argc, char *argv[])
     Vector3d field = CalculateField(iLinks, iJoints, iPosVec);
     field = RotateField(field, reconciliationAngles);
     field(1) = 0;
-    std::cout << "Initial answer:\n" << field << "\n";
+    std::cout << "Initial answer:\n"
+              << field << "\n";
 
     /**************************************************************
      *
@@ -97,35 +98,33 @@ int main(int argc, char *argv[])
     Pylon::CImageFormatConverter formatConverter;
     formatConverter.OutputPixelFormat = Pylon::PixelType_BGR8packed;
     Pylon::CPylonImage pylonImage;
-    Pylon::CInstantCamera camera(Pylon::CTlFactory::GetInstance().CreateFirstDevice() );
+    Pylon::CInstantCamera camera(Pylon::CTlFactory::GetInstance().CreateFirstDevice());
     camera.Open();
-    Pylon::CIntegerParameter width     ( camera.GetNodeMap(), "Width");
-    Pylon::CIntegerParameter height    ( camera.GetNodeMap(), "Height");
-    Pylon::CEnumParameter pixelFormat  ( camera.GetNodeMap(), "PixelFormat");
-    
+    Pylon::CIntegerParameter width(camera.GetNodeMap(), "Width");
+    Pylon::CIntegerParameter height(camera.GetNodeMap(), "Height");
+    Pylon::CEnumParameter pixelFormat(camera.GetNodeMap(), "PixelFormat");
+
     Pylon::CFloatParameter(camera.GetNodeMap(), "ExposureTime").SetValue(20000.0);
-    
-    
-    
-    Size frameSize= Size((int)width.GetValue(), (int)height.GetValue());
+
+    Size frameSize = Size((int)width.GetValue(), (int)height.GetValue());
     int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
     width.TrySetValue(PYLON_WIDTH, Pylon::IntegerValueCorrection_Nearest);
     height.TrySetValue(PYLON_HEIGHT, Pylon::IntegerValueCorrection_Nearest);
-    Pylon::CPixelTypeMapper pixelTypeMapper( &pixelFormat);
+    Pylon::CPixelTypeMapper pixelTypeMapper(&pixelFormat);
     Pylon::EPixelType pixelType = pixelTypeMapper.GetPylonPixelTypeFromNodeValue(pixelFormat.GetIntValue());
     camera.StartGrabbing(Pylon::GrabStrategy_LatestImageOnly);
     Pylon::CGrabResultPtr ptrGrabResult;
     camera.RetrieveResult(5000, ptrGrabResult, Pylon::TimeoutHandling_ThrowException);
-    const uint8_t* preImageBuffer = (uint8_t*) ptrGrabResult->GetBuffer();
+    const uint8_t *preImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
     formatConverter.Convert(pylonImage, ptrGrabResult);
-    pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(), CV_8UC3, (uint8_t *) pylonImage.GetBuffer());
+    pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(), CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
 
-    // VideoWriter video_out(home_path + "coil_manipulator/output.avi", VideoWriter::fourcc('M', 'J', 'P', 'G'), 10, 
+    // VideoWriter video_out(home_path + "coil_manipulator/output.avi", VideoWriter::fourcc('M', 'J', 'P', 'G'), 10,
     //             Size(img.rows / 2, img.cols * 3 / 8));
 
-    //resizing the image for faster processing
+    // resizing the image for faster processing
     int rrows = pre_img.rows * 3 / 8;
-    int rcols = pre_img.cols * 3 / 8; 
+    int rcols = pre_img.cols * 3 / 8;
 
     /**************************************************************
      *
@@ -149,15 +148,13 @@ int main(int argc, char *argv[])
     // intr_mask = IntroducerMask(pre_img1);
     intr_mask = IntroducerMask(pre_img);
     int jointsCached = 0;
-    int error =0, prev_error = 0;
+    int error = 0, prev_error = 0;
     int d_error = 0;
     int step_count = 0;
     Point p0 = Point{-2000, 2000};
     bool firstRun = true;
-    int baseline_error = 0;
-    recordPerformance << step_count << "," << error << "," <<
-        d_error << "," << EMulitplier << "," << field(0) << "," <<
-        field(1) << "," << field(2) << "\n";
+    int baseline_error = 33;
+    recordPerformance << step_count << "," << error << "," << d_error << "," << EMulitplier << "," << field(0) << "," << field(1) << "," << field(2) << "\n";
     std::cout << "Ready to go. Press enter";
     std::cin.get();
 
@@ -196,16 +193,24 @@ int main(int argc, char *argv[])
         std::vector<double> desiredAngles_ = std::vector<double>(DesiredAngles.begin(), DesiredAngles.end() - 1);
         std::vector<Point> idealPoints;
         // if (p0 == Point{-2000, 2000})
-            p0 = Joints[0];
+        p0 = Joints[0];
 
-        idealPoints = computeIdealPoints(p0, desiredAngles_);
+        idealPoints = computeIdealPoints(p0, DesiredAngles);
+        std::cout << "Desired angles slice size: " << DesiredAngles.size() << "\n";
+
         angles = computeAngles(Joints);
-        for (int i = 0; i < idealPoints.size() - 1; i++)
+        for (int i = 0; i <= idealPoints.size() - 1; i++)
         {
+            std::cout << " " << i;
             line(post_img, idealPoints[i], idealPoints[i + 1], Scalar(0, 0, 255), 2);
             circle(post_img, idealPoints[i], 3, Scalar(0, 255, 0), FILLED);
+            putText(post_img, std::to_string(i), idealPoints[i],
+                    FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
         }
-
+        std::cout << "\n";
+        circle(post_img, idealPoints[ idealPoints.size()-1], 3, Scalar(0, 255, 0), FILLED);
+        putText(post_img, std::to_string(idealPoints.size()-1), idealPoints[idealPoints.size() -1],
+                FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
         /**
          * @brief DRAW A LEGEND
          */
@@ -223,16 +228,15 @@ int main(int argc, char *argv[])
         putText(post_img, "Desired",
                 TopLeftLegend + Point(84, 52), FONT_HERSHEY_DUPLEX,
                 1, Scalar(0, 0, 0));
-        //blue rect. Desired
+        // blue rect. Desired
         rectangle(post_img, TopLeftLegend + Point(5, 12), TopLeftLegend + Point(80, 22),
                   Scalar(255, 0, 0), FILLED);
-        //red rect. Detected
+        // red rect. Detected
         rectangle(post_img, TopLeftLegend + Point(5, 38), TopLeftLegend + Point(80, 48),
                   Scalar(0, 0, 255), FILLED);
         /**
          * @brief DRAW A LEGEND
          */
-
 
         // if(JointsObserved != jointsCached){
 
@@ -242,15 +246,16 @@ int main(int argc, char *argv[])
         error = positionWiseError(idealPoints, Joints) - baseline_error;
         d_error = prev_error - error;
         prev_error = error;
-        int K_derivative = derivativeAdjustment( abs(d_error), error);
+        int K_derivative = derivativeAdjustment(abs(d_error), error);
         std::cout << "\n\n---------------------------------------------------------\n\n";
 
-        if(firstRun){
-            baseline_error = error;
-            lowError -= baseline_error;
-            upperError -= baseline_error;
-            firstRun = false;
-        }
+        // if(firstRun){
+        //     baseline_error = error;
+        //     lowError -= baseline_error;
+        //     upperError -= baseline_error;
+        //     firstRun = false;
+        //     continue;
+        // }
 
         // Controller Logic
         // if e < 0: signFlag = -1
@@ -261,23 +266,21 @@ int main(int argc, char *argv[])
         // Scenario 3. e > HighS -> K += signFlag
         int signFlag = (error < 0 | d_error < 0) ? -1 : 1;
         std::cout << "Baseline " << baseline_error;
-        std::cout << " Error " << error << " ";
-        std::cout << "Kd " << K_derivative << "\n";
+        std::cout << "\nError " << error << " d_error " << d_error;
+        std::cout << " -> Kd " << K_derivative << " ";
         std::cout << "signFlag " << signFlag << "\n";
         error = abs(error);
 
         if (error < lowError)
         {
             std::cout << "Victory\n";
-            recordPerformance << step_count << "," << error << "," <<
-                d_error << "," << EMulitplier << "," << field(0) << "," <<
-                field(1) << "," << field(2) << "\n";
-            
-            std::cout << "Final set of joint angles:\n";
-            std::vector<double> finalAngles = computeAngles(Joints);
-            for(auto i: finalAngles){
-                std::cout << i << "\n";
-            }
+            recordPerformance << step_count << "," << error << "," << d_error << "," << EMulitplier << "," << field(0) << "," << field(1) << "," << field(2) << "\n";
+
+            // std::cout << "Final set of joint angles:\n";
+            // std::vector<double> finalAngles = computeAngles(Joints);
+            // for(auto i: finalAngles){
+            //     std::cout << i << "\n";
+            // }
             std::cout << "End of operations\n";
             imshow("Post", post_img);
             video_out.write(post_img);
@@ -290,14 +293,14 @@ int main(int argc, char *argv[])
         else if (error > lowError && error <= upperError)
         {
             std::cout << "Adjusting field\n";
-            std::cout << "Operation explicitly: \n" << "field * " << 
-             0.1 << " * " << signFlag << " * " <<  K_derivative << "\n";
+            // std::cout << "Operation explicitly: \n" << "field * " <<
+            //  0.1 << " * " << signFlag << " * " <<  K_derivative << "\n";
             field += field * 0.1 * signFlag * K_derivative;
         }
         else if (error > upperError)
         {
-            EMulitplier += (signFlag*K_derivative);
-            std::cout << "Adjusting E to "<< EMulitplier << "\n";
+            EMulitplier += (signFlag * K_derivative);
+            std::cout << "Adjusting E to " << EMulitplier << "\n";
             adjustStiffness(iLinks, EMulitplier);
             field = CalculateField(iLinks, iJoints, iPosVec);
             field = RotateField(field, reconciliationAngles);
@@ -314,9 +317,7 @@ int main(int argc, char *argv[])
 
         mid.set3DField(field);
         step_count++;
-        recordPerformance << step_count << "," << error << "," <<
-            d_error << "," << EMulitplier << "," << field(0) << "," <<
-            field(1) << "," << field(2) << "\n";
+        recordPerformance << step_count << "," << error << "," << d_error << "," << EMulitplier << "," << field(0) << "," << field(1) << "," << field(2) << "\n";
 
         imshow("Post", post_img);
         video_out.write(post_img);
@@ -329,6 +330,4 @@ int main(int argc, char *argv[])
     // destroyAllWindows();
     // Pylon::PylonTerminate();
     return 0;
-
-
 }
