@@ -6,12 +6,12 @@ double lowError = 7e3;
 int main(int argc, char* argv[]){
     int jointEff = 5;
     int jointNo = jointEff + 1;
-    std::vector<int> DesiredAngles(jointNo);
-    DesiredAngles[0] = 0;
-    DesiredAngles[1] = 30;
-    DesiredAngles[2] = 10;
-    DesiredAngles[3] = 30;
-    DesiredAngles[4] = 45;
+    std::vector<double> DesiredAngles(jointNo);
+    DesiredAngles[0] = 45;
+    DesiredAngles[1] = 10;
+    DesiredAngles[2] = 25;
+    DesiredAngles[3] = 45;
+    DesiredAngles[4] = 10;
     DesiredAngles[jointEff] = 0;
     /**************************************************************
      *
@@ -81,12 +81,26 @@ int main(int argc, char* argv[]){
         }
         drawContours(post_img, contours, -1, Scalar(255, 255, 0));
         std::vector<double> angles;
-        std::vector<double> desiredAngles_ = std::vector<double>(DesiredAngles.begin(), DesiredAngles.end() - 1);
         std::vector<Point> idealPoints;
         // if (p0 == Point{-2000, 2000})
             p0 = Joints[0];
 
-        idealPoints = computeIdealPoints(p0, desiredAngles_);
+        idealPoints = computeIdealPoints(p0, DesiredAngles);
+        // std::cout << "Desired angles slice size: " << DesiredAngles.size() << "\n";
+
+        angles = computeAngles(Joints);
+        for (int i = 0; i < idealPoints.size() - 1; i++)
+        {
+            // std::cout << " " << i;
+            line(post_img, idealPoints[i], idealPoints[i + 1], Scalar(0, 0, 255), 2);
+            circle(post_img, idealPoints[i], 3, Scalar(0, 255, 0), FILLED);
+            putText(post_img, std::to_string(i), idealPoints[i],
+                    FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
+        }
+        // std::cout << "\n";
+        circle(post_img, idealPoints[ idealPoints.size()-1], 3, Scalar(0, 255, 0), FILLED);
+        putText(post_img, std::to_string(idealPoints.size()-1), idealPoints[idealPoints.size() -1],
+                FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
         angles = computeAngles(Joints);
         for (int i = 0; i < idealPoints.size() - 1; i++)
         {
@@ -124,9 +138,9 @@ int main(int argc, char* argv[]){
 
         // if(JointsObserved != jointsCached){
 
-        std::vector<double> dAngleSlice = std::vector<double>(desiredAngles_.end() - angles.size(), desiredAngles_.end());
+        // std::vector<double> dAngleSlice = std::vector<double>(desiredAngles_.end() - angles.size(), desiredAngles_.end());
         // std::vector<double> dAngleSlice = desiredAngles_;
-        int error = pieceWiseErrorWeighted(dAngleSlice, angles);
+        int error = pieceWiseErrorWeighted(DesiredAngles, angles);
         int pointError = positionWiseError(idealPoints, Joints);
         std::cout << "\n\n---------------------------------------------------------\n\n";
 
