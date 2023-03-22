@@ -8,9 +8,9 @@ int main(int argc, char* argv[]){
     int jointNo = jointEff + 1;
     std::vector<double> DesiredAngles(jointNo);
     DesiredAngles[0] = 45;
-    DesiredAngles[1] = 10;
-    DesiredAngles[2] = 25;
-    DesiredAngles[3] = 45;
+    DesiredAngles[1] = 0;
+    DesiredAngles[2] = 0;
+    DesiredAngles[3] = 0;
     DesiredAngles[4] = 10;
     DesiredAngles[jointEff] = 0;
     /**************************************************************
