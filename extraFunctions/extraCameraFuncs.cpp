@@ -99,10 +99,10 @@ std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngle
         Point pn = Point{(int)(ideal[i - 1].x + xdiff), (int)(ideal[i - 1].y + ydiff)};
         ideal.push_back(pn);
     }
-    std::cout << " Inside ideal points comp. Points calced:\n";
-    for(auto i : ideal){
-        std::cout << " " << i;
-    }
+    // std::cout << " Inside ideal points comp. Points calced:\n";
+    // for(auto i : ideal){
+    //     std::cout << " " << i;
+    // }
     return ideal;
 }
 

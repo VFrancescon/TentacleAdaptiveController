@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{180, 0, 180};
+    Vector3d reconciliationAngles = Vector3d{90,0,270};
     double EMulitplier = 15;
 
     if(argc  == 2){
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
     Vector3d field = CalculateField(iLinks, iJoints, iPosVec);
     field = RotateField(field, reconciliationAngles);
-    field(1) = 0;
+    field(2) = 0;
     std::cout << "Initial answer:\n" << field << "\n";
 
 

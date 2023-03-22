@@ -1,8 +1,8 @@
 #include "HCoilMiddlewareLib/HCoilMiddlewareLib.hpp"
 #include "ControllerPrototype.hpp"
 
-double upperError = 60;
-double lowError = 25;
+double upperError = 75;
+double lowError = 55;
 
 int main(int argc, char *argv[])
 {
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
     // timesteps are equal to joint no
     int timesteps = jointEff;
     Vector3d reconciliationAngles = Vector3d{180, 0, 180};
-    double EMulitplier = 1;
+    double EMultiplier = 1;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
      *                                               *
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 
     // create vector of links for properties
     std::vector<Link> iLinks(jointEff);
-    adjustStiffness(iLinks, EMulitplier);
+    adjustStiffness(iLinks, EMultiplier);
 
     Vector3d field = CalculateField(iLinks, iJoints, iPosVec);
     field = RotateField(field, reconciliationAngles);
@@ -82,9 +82,6 @@ int main(int argc, char *argv[])
      *
      *****************************************************************/
     MiddlewareLayer mid(true);
-    // std::cout << "Press enter to apply field:";
-    // std::cin.get();
-    // mid.set3DField(field);
 
     /**************************************************************
      *
@@ -154,7 +151,7 @@ int main(int argc, char *argv[])
     Point p0 = Point{-2000, 2000};
     bool firstRun = true;
     int baseline_error = 33;
-    recordPerformance << step_count << "," << error << "," << d_error << "," << EMulitplier << "," << field(0) << "," << field(1) << "," << field(2) << "\n";
+    recordPerformance << step_count << "," << error << "," << d_error << "," << EMultiplier << "," << field(0) << "," << field(1) << "," << field(2) << "\n";
     std::cout << "Ready to go. Press enter";
     std::cin.get();
 
@@ -196,18 +193,18 @@ int main(int argc, char *argv[])
         p0 = Joints[0];
 
         idealPoints = computeIdealPoints(p0, DesiredAngles);
-        std::cout << "Desired angles slice size: " << DesiredAngles.size() << "\n";
+        // std::cout << "Desired angles slice size: " << DesiredAngles.size() << "\n";
 
         angles = computeAngles(Joints);
-        for (int i = 0; i <= idealPoints.size() - 1; i++)
+        for (int i = 0; i < idealPoints.size() - 1; i++)
         {
-            std::cout << " " << i;
+            // std::cout << " " << i;
             line(post_img, idealPoints[i], idealPoints[i + 1], Scalar(0, 0, 255), 2);
             circle(post_img, idealPoints[i], 3, Scalar(0, 255, 0), FILLED);
             putText(post_img, std::to_string(i), idealPoints[i],
                     FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
         }
-        std::cout << "\n";
+        // std::cout << "\n";
         circle(post_img, idealPoints[ idealPoints.size()-1], 3, Scalar(0, 255, 0), FILLED);
         putText(post_img, std::to_string(idealPoints.size()-1), idealPoints[idealPoints.size() -1],
                 FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
@@ -238,7 +235,6 @@ int main(int argc, char *argv[])
          * @brief DRAW A LEGEND
          */
 
-        // if(JointsObserved != jointsCached){
 
         jointsCached = JointsObserved;
         std::vector<double> dAngleSlice = std::vector<double>(desiredAngles_.end() - angles.size(), desiredAngles_.end());
@@ -247,7 +243,7 @@ int main(int argc, char *argv[])
         d_error = prev_error - error;
         prev_error = error;
         int K_derivative = derivativeAdjustment(abs(d_error), error);
-        std::cout << "\n\n---------------------------------------------------------\n\n";
+        std::cout << "\n---------------------------------------------------------\n\n";
 
         // if(firstRun){
         //     baseline_error = error;
@@ -274,7 +270,7 @@ int main(int argc, char *argv[])
         if (error < lowError)
         {
             std::cout << "Victory\n";
-            recordPerformance << step_count << "," << error << "," << d_error << "," << EMulitplier << "," << field(0) << "," << field(1) << "," << field(2) << "\n";
+            recordPerformance << step_count << "," << error << "," << d_error << "," << EMultiplier << "," << field(0) << "," << field(1) << "," << field(2) << "\n";
 
             // std::cout << "Final set of joint angles:\n";
             // std::vector<double> finalAngles = computeAngles(Joints);
@@ -299,25 +295,27 @@ int main(int argc, char *argv[])
         }
         else if (error > upperError)
         {
-            EMulitplier += (signFlag * K_derivative);
-            std::cout << "Adjusting E to " << EMulitplier << "\n";
-            adjustStiffness(iLinks, EMulitplier);
+            EMultiplier += (signFlag * K_derivative);
+            std::cout << "Adjusting E to " << EMultiplier << "\n";
+            adjustStiffness(iLinks, EMultiplier);
             field = CalculateField(iLinks, iJoints, iPosVec);
             field = RotateField(field, reconciliationAngles);
             field(1) = 0;
         }
 
-        std::cout << "E: " << EMulitplier << " applied field:\n"
+        std::cout << "E: " << EMultiplier << " applied field:\n"
                   << field << "\n";
 
         if (abs(field(0)) > 20 && abs(field(2)) > 15 && abs(field(1)) > 20)
             break;
-        if (EMulitplier < 0)
-            break;
+        if (EMultiplier < 0){
+            EMultiplier = 0;
+            continue;
+        }
 
         mid.set3DField(field);
         step_count++;
-        recordPerformance << step_count << "," << error << "," << d_error << "," << EMulitplier << "," << field(0) << "," << field(1) << "," << field(2) << "\n";
+        recordPerformance << step_count << "," << error << "," << d_error << "," << EMultiplier << "," << field(0) << "," << field(1) << "," << field(2) << "\n";
 
         imshow("Post", post_img);
         video_out.write(post_img);
@@ -327,7 +325,5 @@ int main(int argc, char *argv[])
     }
     video_out.release();
     mid.~MiddlewareLayer();
-    // destroyAllWindows();
-    // Pylon::PylonTerminate();
     return 0;
 }

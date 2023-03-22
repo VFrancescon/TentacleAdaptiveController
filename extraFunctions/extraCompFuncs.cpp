@@ -228,12 +228,13 @@ MatrixXd StackDiagonals(std::vector<Matrix3d> matrices)
 
 Vector3d RotateField(Vector3d field, Vector3d rotationAngles)
 {
-    // double AngleZ = rotationAngles(2) * M_PI / 180;
-    // double AngleX = rotationAngles(0) * M_PI / 180;
+    double AngleZ = rotationAngles(2) * M_PI / 180;
+    double AngleY = rotationAngles(1) * M_PI / 180;
+    double AngleX = rotationAngles(0) * M_PI / 180;
 
-    double AngleZ = rotationAngles(2);
-    double AngleY = rotationAngles(1);
-    double AngleX = rotationAngles(0);
+    // double AngleZ = rotationAngles(2);
+    // double AngleY = rotationAngles(1);
+    // double AngleX = rotationAngles(0);
 
     return AngleAxisd(AngleZ, Vector3d::UnitZ()) *
            AngleAxisd(AngleY, Vector3d::UnitY()) *
