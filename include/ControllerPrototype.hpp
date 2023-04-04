@@ -96,17 +96,17 @@ inline int derivativeAdjustment(double d_error, int error){
     // std::cout << "d_error: " << d_error << " - error: " << error 
     std::cout << " scaledDiff: " << scaledDiff << "\n";
     switch(scaledDiff){
-        case 0 ... 20: 
+        case 0 ... 5: 
             // std::cout << "Kd = " << 4 << "\n";
             return 4;
         break;
 
-        case 21 ... 50: 
+        case 6 ... 20: 
             // std::cout << "Kd = " << 2 << "\n";
             return 2;
         break;
 
-        case 51 ... 80:
+        case 21 ... 60:
             // std::cout << "Kd = " << 2 << "\n";
             return 2;
         break;

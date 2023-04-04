@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{0,0,0};
+    Vector3d reconciliationAngles = Vector3d{0,0,180};
     double EMultiplier = 5;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
@@ -32,11 +32,11 @@ int main(int argc, char *argv[])
     std::vector<Vector3d> AppliedFields;
 
     std::vector<double> DesiredAngles(jointNo);
-    DesiredAngles[0] = 0;
-    DesiredAngles[1] = 10;
-    DesiredAngles[2] = 30;
-    DesiredAngles[3] = 45;
-    DesiredAngles[4] = 45;
+    DesiredAngles[0] = 45;
+    DesiredAngles[1] = 0;
+    DesiredAngles[2] = 0;
+    DesiredAngles[3] = 0;
+    DesiredAngles[4] = 10;
     DesiredAngles[jointEff] = 0;
 
     std::vector<Vector3d> Magnetisations(jointNo);
@@ -238,17 +238,18 @@ int main(int argc, char *argv[])
             firstRun = false;
         }
 
-        error = positionWiseError(idealPoints, Joints) - baseline_error;
+        error = positionWiseError(idealPoints, Joints);
         d_error = prev_error - error;
         prev_error = error;
         int Kd = derivativeAdjustment(abs(d_error), error); //send abs because we took care of signs a few lines above.
-        double Kp = (int) error / (int) baseline_error;
+        double Kp = (double) error / (double) baseline_error * 100;
         std::cout << "\n---------------------------------------------------------\n\n";
 
         int signFlag = (error < 0 | d_error < 0) ? -1 : 1;
         std::cout << "Baseline " << baseline_error;
         std::cout << "\nError " << error << " d_error " << d_error;
         std::cout << " -> Kd " << Kd << " ";
+        std::cout << "Kp " << Kp << "\n";
         std::cout << "signFlag " << signFlag << "\n";
         error = abs(error);
         
@@ -266,9 +267,12 @@ int main(int argc, char *argv[])
                 continue;
         }
 
-        if( Kp < 0.3){
+        if( Kp < 21 ){
+            finished = true;
+            continue;
+        } else if( Kp < 40){
             std::cout << "Adjusting field from\n" << field << "\n";
-            field += field * Kp * signFlag * Kd;
+            field += field * signFlag * Kd * 0.1;
             std::cout << "To\n" << field << "\n";
         } else {
             std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
@@ -277,7 +281,7 @@ int main(int argc, char *argv[])
             adjustStiffness(iLinks, EMultiplier);
             field = CalculateField(iLinks, iJoints, iPosVec);
             field = RotateField(field, reconciliationAngles);
-            field(1) = 0;
+            field(1) = field(0) * -0.5;
         }
 
 
@@ -297,7 +301,7 @@ int main(int argc, char *argv[])
 
         imshow("Post", post_img);
         video_out.write(post_img);
-        char c = (char)waitKey(0);
+        char c = (char)waitKey(5e3);
         if (c == 27)
             break;
     }
