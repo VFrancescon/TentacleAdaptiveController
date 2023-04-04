@@ -146,28 +146,7 @@ std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point
     if (JointNumber)
     {
         Joints = equally_spaced_points(cntLine, JointNumber);
-
-        // std::vector<Point>::iterator cntLineIterator = cntLine.end()-1;
-        // std::vector<Point>::iterator cntLineEnd = cntLine.end() -1;
-
-        // //find the number of viable points
-        // // int availablePoints = cntLineEnd - cntLineIterator;
-        // // std::cout << "Available: " << availablePoints << "\n"
-        // // << "vs the size of the vect: " << cntLine.size() << "\n";
-
-        // for (int i = 0; i < JointNumber; i++)
-        // {
-        //     Joints.push_back(*cntLineIterator);
-        //     std::cout << "Pushing back point: \n" << *cntLineIterator << "\n";
-        //     std::advance(cntLineIterator, -1*link_lenght);
-        // }
-        // std::cout << "Actual last point is: " << *cntLineEnd << "\n";
-        // Joints.push_back(*cntLineEnd);
-        // std::cout << "Pushing back point: \n" << *cntLineIterator << "\n";
-
     }
-    // std::reverse(Joints.begin(), Joints.end());
-    // std::cout << "Number of joints " << Joints.size() << "\n";
 
     return Joints;
 }

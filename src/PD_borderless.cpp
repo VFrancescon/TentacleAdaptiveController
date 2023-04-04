@@ -242,14 +242,15 @@ int main(int argc, char *argv[])
         d_error = prev_error - error;
         prev_error = error;
         int Kd = derivativeAdjustment(abs(d_error), error); //send abs because we took care of signs a few lines above.
-        double Kp = (double) error / (double) baseline_error * 100;
+        double Kp = (double) error / (double) baseline_error;  // a decimal of the error wrt the baseline
+        double KpPercent = Kp * 100; // a Percentage of the error wrt the baseline
         std::cout << "\n---------------------------------------------------------\n\n";
 
         int signFlag = (error < 0 | d_error < 0) ? -1 : 1;
         std::cout << "Baseline " << baseline_error;
         std::cout << "\nError " << error << " d_error " << d_error;
         std::cout << " -> Kd " << Kd << " ";
-        std::cout << "Kp " << Kp << "\n";
+        std::cout << "KpPercent " << KpPercent << "\n";
         std::cout << "signFlag " << signFlag << "\n";
         error = abs(error);
         
@@ -267,12 +268,12 @@ int main(int argc, char *argv[])
                 continue;
         }
 
-        if( Kp < 21 ){
+        if( KpPercent < 21 ){
             finished = true;
             continue;
-        } else if( Kp < 40){
+        } else if( KpPercent < 35){
             std::cout << "Adjusting field from\n" << field << "\n";
-            field += field * signFlag * Kd * 0.1;
+            field += field * signFlag * Kd * Kp;
             std::cout << "To\n" << field << "\n";
         } else {
             std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
