@@ -28,8 +28,6 @@ int main(int argc, char *argv[])
     double EMultiplier = 5;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
-     *                                               *
-     *                                               *
      * * * * * * * * * * * * * * * * * * * * * * * * */
     std::vector<Vector3d> AppliedFields;
 
@@ -74,18 +72,14 @@ int main(int argc, char *argv[])
 
     /**************************************************************
      *
-     *
      * Middleware Setup
-     *
      *
      *****************************************************************/
     MiddlewareLayer mid(true);
 
     /**************************************************************
      *
-     *
      * PYLON SETUP
-     *
      *
      *****************************************************************/
     Mat pre_img, post_img, intr_mask;
@@ -113,9 +107,6 @@ int main(int argc, char *argv[])
     const uint8_t *preImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
     formatConverter.Convert(pylonImage, ptrGrabResult);
     pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(), CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
-
-    // VideoWriter video_out(home_path + "coil_manipulator/output.avi", VideoWriter::fourcc('M', 'J', 'P', 'G'), 10,
-    //             Size(img.rows / 2, img.cols * 3 / 8));
 
     // resizing the image for faster processing
     int rrows = pre_img.rows * 3 / 8;
@@ -208,6 +199,8 @@ int main(int argc, char *argv[])
         circle(post_img, idealPoints[ idealPoints.size()-1], 3, Scalar(0, 255, 0), FILLED);
         putText(post_img, std::to_string(idealPoints.size()-1), idealPoints[idealPoints.size() -1],
                 FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
+        
+        //#region legend
         /**
          * @brief DRAW A LEGEND
          */
@@ -234,7 +227,7 @@ int main(int argc, char *argv[])
         /**
          * @brief DRAW A LEGEND
          */
-
+        //#endregion
 
         jointsCached = JointsObserved;
         std::vector<double> dAngleSlice = std::vector<double>(desiredAngles_.end() - angles.size(), desiredAngles_.end());
@@ -252,21 +245,6 @@ int main(int argc, char *argv[])
         double Kp = (int) error / (int) baseline_error;
         std::cout << "\n---------------------------------------------------------\n\n";
 
-        // if(firstRun){
-        //     baseline_error = error;
-        //     lowError -= baseline_error;
-        //     upperError -= baseline_error;
-        //     firstRun = false;
-        //     continue;
-        // }
-
-        // Controller Logic
-        // if e < 0: signFlag = -1
-        // else signFlag = 1
-        // then e = abs(e)
-        // Scenario 1. e < LowS -> Do Nothing
-        // Scenario 2. LowS < e < HighS -> Field + P*signFlag
-        // Scenario 3. e > HighS -> K += signFlag
         int signFlag = (error < 0 | d_error < 0) ? -1 : 1;
         std::cout << "Baseline " << baseline_error;
         std::cout << "\nError " << error << " d_error " << d_error;
@@ -274,18 +252,10 @@ int main(int argc, char *argv[])
         std::cout << "signFlag " << signFlag << "\n";
         error = abs(error);
         
-
-        //currently unreachable by design
         if (finished)
         {
             std::cout << "Victory\n";
             recordPerformance << step_count << "," << error << "," << d_error << "," << EMultiplier << "," << field(0) << "," << field(1) << "," << field(2) << "\n";
-
-            // std::cout << "Final set of joint angles:\n";
-            // std::vector<double> finalAngles = computeAngles(Joints);
-            // for(auto i: finalAngles){
-            //     std::cout << i << "\n";
-            // }
             std::cout << "End of operations\n";
             imshow("Post", post_img);
             video_out.write(post_img);
@@ -295,24 +265,6 @@ int main(int argc, char *argv[])
             else
                 continue;
         }
-
-
-        // else if (error > lowError && error <= upperError)
-        // {
-        //     std::cout << "Adjusting field\n";
-        //     // std::cout << "Operation explicitly: \n" << "field * " <<
-        //     //  0.1 << " * " << signFlag << " * " <<  Kderivative << "\n";
-        //     field += field * 0.1 * signFlag * Kderivative;
-        // }
-        // else if (error > upperError)
-        // {
-        //     EMultiplier += (signFlag * Kderivative);
-        //     std::cout << "Adjusting E to " << EMultiplier << "\n";
-        //     adjustStiffness(iLinks, EMultiplier);
-        //     field = CalculateField(iLinks, iJoints, iPosVec);
-        //     field = RotateField(field, reconciliationAngles);
-        //     field(1) = 0;
-        // }
 
         if( Kp < 0.3){
             std::cout << "Adjusting field from\n" << field << "\n";
