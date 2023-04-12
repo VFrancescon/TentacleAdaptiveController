@@ -139,4 +139,7 @@ void adjustStiffness(std::vector<Link> &iLinks, double EMulitplier);
  */
 Vector3d CalculateField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, std::vector<PosOrientation> &iPosVec);
 
+MatrixXd backwardsQ(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
+                    std::vector<PosOrientation> &iPosVec);
+
 #endif

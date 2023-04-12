@@ -329,12 +329,62 @@ Vector3d CalculateField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
     MatrixXd GravWrench = Jt * StackedGrav;
     // std::cout << "GravWrench\n" << GravWrench << "\n";
     // std::cout << "Jt\n" << Jt << "\n";
-    MatrixXd LHS = KStacked * AnglesStacked + GravWrench;
-    // MatrixXd LHS = KStacked * AnglesStacked ;
+    // MatrixXd LHS = KStacked * AnglesStacked + GravWrench;
+    MatrixXd LHS = KStacked * AnglesStacked ;
 
     // std::cout <<"Solve breaks\n";s
     // std::cout << "LHS\n" << LHS << "\n";
     // std::cout << "RHS\n" << RHS << "\n";
     MatrixXd solution = RHS.completeOrthogonalDecomposition().solve(LHS);
     return solution * 1000;
+}
+
+MatrixXd backwardsQ(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
+                    std::vector<PosOrientation> &iPosVec)
+{
+    MatrixXd KStacked;
+    KStacked = EvaluateK(iLinks);
+    VectorXd AnglesStacked;
+    AnglesStacked = StackAngles(iJoints);
+
+    DirectKinematics(iPosVec, iJoints, iLinks);
+    MatrixXd Jacobian, Jt;
+    Jacobian = EvaluateJacobian(iPosVec);
+
+    Jt = Jacobian.transpose();
+
+    MatrixXd FieldMap;
+    FieldMap = MagtoFieldMap(iJoints);
+
+    MatrixXd RHS = Jt * FieldMap;
+
+    float density = 1000;
+    float v1 = iLinks[0].dL * (M_PI * pow(iLinks[0].d / 2, 2));
+    float mass = density * v1;
+    MatrixXd GlobalGrav(6, 1);
+    GlobalGrav << 0, 0, -9.81, 0, 0, 0;
+    GlobalGrav = GlobalGrav * mass;
+    int jointEff = (int)iJoints.size();
+
+    MatrixXd StackedGrav = VerticalStack(GlobalGrav, GlobalGrav);
+    for (int i = 2; i < jointEff - 1; i++)
+    {
+        StackedGrav = VerticalStack(StackedGrav, GlobalGrav);
+    }
+    MatrixXd GravWrench = Jt * StackedGrav;
+    // MatrixXd LHS = KStacked * AnglesStacked + GravWrench;
+    MatrixXd LHS = KStacked * AnglesStacked ;
+    MatrixXd solution = RHS.completeOrthogonalDecomposition().solve(LHS);
+    
+    // std::cout << "Sizes.\nRHS: " << RHS.rows() << "x" << RHS.cols() << 
+    // "\nGravWrench: " << GravWrench.rows() << "x" << GravWrench.cols() <<
+    // "\nKStackedINV: " << KStacked.inverse().rows() << "x" << KStacked.inverse().cols() 
+    // << "\n";
+    MatrixXd KInv = KStacked.inverse();
+    MatrixXd BackwardsAngles = KInv* (RHS * solution);
+    // MatrixXd BackwardsAngles = KInv* (RHS * solution - GravWrench);
+    
+    
+    return BackwardsAngles;
+    // return solution;
 }
