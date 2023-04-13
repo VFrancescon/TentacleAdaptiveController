@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     Vector3d reconciliationAngles = Vector3d{0, 0, 180};
     double EMulitplier = 30;
     
-    std::vector<double> DesiredAngles(jointNo), CalculatedAngles(jointNo);
+    std::vector<double> DesiredAngles(jointNo);
     if (argc == 6)
     {
         DesiredAngles[0] = std::stod(argv[1]);
@@ -135,13 +135,19 @@ int main(int argc, char *argv[])
     std::cout << "Initial answer:\n"
               << field << "\n";
 
-    for (int i = 0; i < possibleAngles.size(); i++){
-        if (i % 2 == 1)
-            CalculatedAngles.push_back(possibleAngles(i));
-    }
+    std::cout << "backwards Angles. Size: " << possibleAngles.size() << ":\n";
+    for(int i = 0; i < possibleAngles.size(); i++) std::cout << possibleAngles(i) << "\n";
 
+    std::vector<double> CalculatedAngles;
+    for(int i = 0; i < jointNo - 1; i++){
+        CalculatedAngles.push_back(possibleAngles(1+3*i));
+    }
+    CalculatedAngles.push_back(0);
+    std::cout << "calced angles:\n";
+    for(auto i: CalculatedAngles) std::cout << i << " ";
+    std::cout << "\n";
     std::vector<Point2d> theoreticalPoints = CalcPoints(DesiredAngles);
-    std::vector<Point2d> calculatedPoints = CalcPoints(CalculatedAngles);
+    std::vector<Point2d> calculatedPoints = CalcPoints(possibleAngles);
     // std::vector<Point2d> calculatedPoints = {Point2d(0,0), Point2d(0,0), Point2d(0,0), Point2d(0,0), Point2d(0,0), Point2d(0,0)};
     std::vector<Vector3d> MagnetisationsOutput = Magnetisations;
     MagnetisationsOutput.insert(MagnetisationsOutput.begin(), Vector3d(0,0,0));

@@ -32,12 +32,22 @@ int main(int argc, char *argv[])
     std::vector<Vector3d> AppliedFields;
 
     std::vector<double> DesiredAngles(jointNo);
-    DesiredAngles[0] = 45;
-    DesiredAngles[1] = 0;
-    DesiredAngles[2] = 0;
-    DesiredAngles[3] = 0;
-    DesiredAngles[4] = 10;
-    DesiredAngles[jointEff] = 0;
+    if (argc == 6)
+    {
+        DesiredAngles[0] = std::stod(argv[1]);
+        DesiredAngles[1] = std::stod(argv[2]);
+        DesiredAngles[2] = std::stod(argv[3]);
+        DesiredAngles[3] = std::stod(argv[4]);
+        DesiredAngles[4] = std::stod(argv[5]);
+        DesiredAngles[jointEff] = 0;
+    } else {
+        DesiredAngles[0] = 45;
+        DesiredAngles[1] = 0;
+        DesiredAngles[2] = 0;
+        DesiredAngles[3] = 0;
+        DesiredAngles[4] = 0;
+        DesiredAngles[jointEff] = 0;
+    }
 
     std::vector<Vector3d> Magnetisations(jointNo);
     Magnetisations[0] = Vector3d(-0.0011, 0, -0.0028);
