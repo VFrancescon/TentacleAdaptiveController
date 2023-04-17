@@ -1,5 +1,6 @@
 #include "ControllerPrototype.hpp"
 #include <matplotlibcpp.h>
+#include <functional>
 
 namespace plt = matplotlibcpp;
 
@@ -206,6 +207,9 @@ int main(int argc, char *argv[])
     keywordsPC["markersize"] = "12";
 
 
+    std::transform(theoreticalPoints.begin(), theoreticalPoints.end(),
+        theoreticalPoints.begin(), [] (Point2d a) { return Point2d(a.x * 1e3, a.y * 1e3);} );
+
     for(int k = 0; k < 40; k++){
         plt::clf();
         calculatedPoints.clear();
@@ -221,6 +225,11 @@ int main(int argc, char *argv[])
             PzC.push_back(-i.y);
         }
         
+        std::transform(calculatedPoints.begin(), calculatedPoints.end(),
+        calculatedPoints.begin(), [] (Point2d a) { return Point2d(a.x * 1e3, a.y * 1e3);} );
+
+        double pWiseError = positionWiseError(theoreticalPoints, calculatedPoints);
+        std::cout << "Error calced in sim: " << pWiseError << "\n";
         plt::plot(PxT, PzT, keywordsPT);
         plt::plot(PxC, PzC, keywordsPC);
         plt::quiver(PxC, PzC, mx, mz, keywordsQuiverMag);

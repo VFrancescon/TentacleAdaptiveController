@@ -68,7 +68,8 @@
         "unordered_set": "cpp",
         "core": "cpp",
         "csignal": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "codecvt": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "Enabled",
     "ros.distro": "noetic"

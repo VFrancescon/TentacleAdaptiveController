@@ -86,6 +86,22 @@ inline int positionWiseError(std::vector<Point> idealPoints, std::vector<Point> 
     return error;
 }
 
+inline int positionWiseError(std::vector<Point2d> idealPoints, std::vector<Point2d> observedPoints){
+    double avg;
+    double error;
+    std::vector<double> scaledValues;
+    for(int i = 0; i < idealPoints.size(); i++){
+        double ithxDiff = observedPoints[i].x - idealPoints[i].x;
+        double ithyDiff = observedPoints[i].y - idealPoints[i].y;
+        double ithDistance = std::sqrt(ithxDiff*ithxDiff + ithyDiff*ithyDiff);
+        // std::cout << "i : " << i << " distance " << ithDistance << "\n";
+        scaledValues.push_back(ithDistance*i+1);
+    }
+    avg = avgVect(scaledValues);
+    error = avg;
+    return error;
+}
+
 inline int derivativeAdjustment(double d_error, int error){
     //The higher the error, the smaller the return value
     //we apply it to:
