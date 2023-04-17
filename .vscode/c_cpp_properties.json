@@ -8,13 +8,19 @@
                 "/opt/pylon/include",
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/extraFunctions",
-                "/usr/include/opencv4"
+                "/usr/include/opencv4",
+                "/usr/include/python3.8"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",
             "cppStandard": "gnu++14",
             "intelliSenseMode": "linux-gcc-x64"
+        },
+        {
+            "name": "CMake",
+            "compileCommands": "${config:cmake.buildDirectory}/compile_commands.json",
+            "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],
     "version": 4

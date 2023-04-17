@@ -340,7 +340,7 @@ Vector3d CalculateField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
 }
 
 MatrixXd backwardsQ(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
-                    std::vector<PosOrientation> &iPosVec)
+                    std::vector<PosOrientation> &iPosVec, double fieldMultiplier)
 {
     MatrixXd KStacked;
     KStacked = EvaluateK(iLinks);
@@ -382,7 +382,7 @@ MatrixXd backwardsQ(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
     // << "\n";
     MatrixXd KInv = KStacked.inverse();
     // MatrixXd BackwardsAngles = KInv* (RHS * solution);
-    MatrixXd BackwardsAngles = KInv* (RHS * solution - GravWrench);
+    MatrixXd BackwardsAngles = KInv* (RHS * solution * fieldMultiplier - GravWrench);
     
     
     return BackwardsAngles;

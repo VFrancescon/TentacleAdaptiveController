@@ -1,4 +1,7 @@
 #include "ControllerPrototype.hpp"
+#include <matplotlibcpp.h>
+
+namespace plt = matplotlibcpp;
 
 std::vector<Point2d> CalcPoints(MatrixXd angles)
 {
@@ -95,14 +98,6 @@ int main(int argc, char *argv[])
      * * * * * * * * * * * * * * * * * * * * * * * * */
     std::vector<Vector3d> AppliedFields;
 
-    // std::vector<double> DesiredAngles(jointNo);
-    // DesiredAngles[0] = 45;
-    // DesiredAngles[1] = 0;
-    // DesiredAngles[2] = 0;
-    // DesiredAngles[3] = 0;
-    // DesiredAngles[4] = 10;
-    // DesiredAngles[jointEff] = 0;
-
     std::vector<Vector3d> Magnetisations(jointNo);
     Magnetisations[0] = Vector3d(-0.0011, 0, -0.0028);
     Magnetisations[1] = Vector3d(-0.0028, 0, 0.001);
@@ -130,38 +125,29 @@ int main(int argc, char *argv[])
 
     Vector3d field = CalculateField(iLinks, iJoints, iPosVec);
     MatrixXd possibleAngles = backwardsQ(iLinks, iJoints, iPosVec);
-    // field = RotateField(field, reconciliationAngles);
-    // field(1) = 0;
     std::cout << "Initial answer:\n"
               << field << "\n";
 
-    std::cout << "backwards Angles. Size: " << possibleAngles.size() << ":\n";
-    for(int i = 0; i < possibleAngles.size(); i++) std::cout << possibleAngles(i) << "\n";
 
     std::vector<double> CalculatedAngles;
     for(int i = 0; i < jointNo - 1; i++){
         CalculatedAngles.push_back(possibleAngles(1+3*i));
     }
     CalculatedAngles.push_back(0);
-    std::cout << "calced angles:\n";
-    for(auto i: CalculatedAngles) std::cout << i << " ";
-    std::cout << "\n";
     std::vector<Point2d> theoreticalPoints = CalcPoints(DesiredAngles);
     std::vector<Point2d> calculatedPoints = CalcPoints(possibleAngles);
-    // std::vector<Point2d> calculatedPoints = {Point2d(0,0), Point2d(0,0), Point2d(0,0), Point2d(0,0), Point2d(0,0), Point2d(0,0)};
     std::vector<Vector3d> MagnetisationsOutput = Magnetisations;
     MagnetisationsOutput.insert(MagnetisationsOutput.begin(), Vector3d(0,0,0));
-    for (int i = 0; i < theoreticalPoints.size(); i++)
-    {
-        std::cout << "PxT, PyT " << theoreticalPoints[i].x << "," << theoreticalPoints[i].y << " vs ";
-        std::cout << "PxP, PyP " << calculatedPoints[i].x << "," << calculatedPoints[i].y << "\n";
-        // recordPerformance << "Joint, PxT, PyT, PzT, PxP, PyP, PzP, Mx, My, Mz, Bx, By, Bz\n";
-        recordPerformance << i << "," << 
-            theoreticalPoints[i].x << "," << 0 << "," << theoreticalPoints[i].y << "," <<
-            calculatedPoints[i].x << "," << 0 << "," << calculatedPoints[i].y << "," <<
-            MagnetisationsOutput[i](0) << "," << MagnetisationsOutput[i](1) << "," << MagnetisationsOutput[i](2) << "," <<
-            field(0) << "," << field(1) << "," << field(2) << "\n";
-    }
+    // for (int i = 0; i < theoreticalPoints.size(); i++)
+    // {
+    //     std::cout << "PxT, PyT " << theoreticalPoints[i].x << "," << theoreticalPoints[i].y << " vs ";
+    //     std::cout << "PxP, PyP " << calculatedPoints[i].x << "," << calculatedPoints[i].y << "\n";
+    //     recordPerformance << i << "," << 
+    //         theoreticalPoints[i].x << "," << 0 << "," << theoreticalPoints[i].y << "," <<
+    //         calculatedPoints[i].x << "," << 0 << "," << calculatedPoints[i].y << "," <<
+    //         MagnetisationsOutput[i](0) << "," << MagnetisationsOutput[i](1) << "," << MagnetisationsOutput[i](2) << "," <<
+    //         field(0) << "," << field(1) << "," << field(2) << "\n";
+    // }
     for (int i = 0; i < possibleAngles.size(); i++)
     {
         if (possibleAngles(i) < 1e-6)
@@ -171,8 +157,86 @@ int main(int argc, char *argv[])
             possibleAngles(i) = possibleAngles(i) * 180 / M_PI;
         }
     }
-    std::cout << "Backwards angles:\n"
-              << possibleAngles << "\n";
+    std::vector<double> PxT, PyT, PzT;
+    for(auto i: theoreticalPoints){
+        PxT.push_back(i.x);
+        PyT.push_back(0);
+        PzT.push_back(-i.y);
+    }
+    calculatedPoints.pop_back();
+    std::vector<double> PxC, PyC, PzC;
+    for(auto i: calculatedPoints){
+        PxC.push_back(i.x);
+        PyC.push_back(0);
+        PzC.push_back(-i.y);
+    }
 
+    std::vector<double> mx, my, mz;
+    MagnetisationsOutput.pop_back();
+    for(auto i: MagnetisationsOutput){
+        mx.push_back(i(0));
+        my.push_back(-i(1));
+        mz.push_back(-i(2));
+    }
+
+
+    std::map<std::string, std::string> keywordsQuiverMag;
+    keywordsQuiverMag["color"] = "green";
+    keywordsQuiverMag["label"] = "magnetisation";
+
+    std::map<std::string, std::string> keywordsPT;
+    keywordsPT["color"] = "blue";
+    keywordsPT["label"] = "Desired Points";
+    keywordsPT["linestyle"]  = "--";
+    keywordsPT["marker"] = "o";
+    keywordsPT["linewidth"] = "1";
+    keywordsPT["markersize"] = "12";
+
+    // kwargs["marker"] = "o";
+    // kwargs["linestyle"] = "-";
+    // kwargs["linewidth"] = "1";
+    // kwargs["markersize"] = "12";
+
+    std::map<std::string, std::string> keywordsPC;
+    keywordsPC["color"] = "orange";
+    keywordsPC["label"] = "Calculated Points";
+    keywordsPC["linestyle"]  = "--";
+    keywordsPC["marker"] = "o";
+    keywordsPC["linewidth"] = "1";
+    keywordsPC["markersize"] = "12";
+
+
+    for(int k = 0; k < 40; k++){
+        plt::clf();
+        calculatedPoints.clear();
+        possibleAngles = backwardsQ(iLinks, iJoints, iPosVec, (double) k /10);
+        calculatedPoints = CalcPoints(possibleAngles);
+        calculatedPoints.pop_back();
+        PxC.clear(); 
+        PyC.clear(); 
+        PzC.clear();
+        for(auto i: calculatedPoints){
+            PxC.push_back(i.x);
+            PyC.push_back(0);
+            PzC.push_back(-i.y);
+        }
+        
+        plt::plot(PxT, PzT, keywordsPT);
+        plt::plot(PxC, PzC, keywordsPC);
+        plt::quiver(PxC, PzC, mx, mz, keywordsQuiverMag);
+        plt::xlabel("X Axis");
+        plt::ylabel("Y Axis");
+        // plt::set_zlabel("z label"); // set_zlabel rather than just zlabel, in accordance with the Axes3D method
+        plt::title("Validation");
+        plt::grid(true);
+        plt::legend();
+        // plt::show();
+        // plt::clf();
+        plt::pause(1);
+        std::cout << "New Iter. k = " << (double) k / 10 << "\n";
+    }
+    // std::cout << "Backwards angles:\n"
+    //           << possibleAngles << "\n";
+    plt::close();
     return 0;
 }

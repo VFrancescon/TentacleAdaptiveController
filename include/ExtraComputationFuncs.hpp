@@ -139,7 +139,16 @@ void adjustStiffness(std::vector<Link> &iLinks, double EMulitplier);
  */
 Vector3d CalculateField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, std::vector<PosOrientation> &iPosVec);
 
+/**
+ * @brief Solves backwards with field to find obtainable joint angles. also factors in field multiplier.
+ *
+ * @param iLinks Vector containing link-related data (stiffness)
+ * @param iJoints Vector containing joint-related data (angular displacement)
+ * @param iPosVec Vector containing position-related data (linear displacement)
+ * @param fieldMultiplier Postproc multiplier to field. (Default 1)
+ * @return Vector3d Recalculates K, J and S, then feeds forward to solve for field B
+ */
 MatrixXd backwardsQ(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
-                    std::vector<PosOrientation> &iPosVec);
+                    std::vector<PosOrientation> &iPosVec, double fieldMultiplier=1);
 
 #endif

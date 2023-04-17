@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.1.0)
 project(AdaptiveController) ##EDIT THIS WITH YOUR PROJECT NAME
 
 ## S0: Some boilerplate
-add_definitions(-std=c++14)
-set(CMAKE_CXX_STANDARD 14)
+add_definitions(-std=c++17)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -16,6 +16,7 @@ endif()
 find_package(Threads REQUIRED)
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
+find_package(matplotlib_cpp REQUIRED)
 ## S2: Finding custom libraries
 find_library(MID HCoilMiddlewareLib )
 find_library(PSU  DxkdpLib )
@@ -64,7 +65,7 @@ target_link_libraries( testJoints ${VisionLibs})
 target_link_libraries( run_camera ${EIGEN} ${VisionLibs})
 target_link_libraries( errorTrials ${EIGEN} ${VisionLibs})
 target_link_libraries( testcomps ${EIGEN} ${VisionLibs})
-target_link_libraries( validations ${EIGEN} ${VisionLibs})
+target_link_libraries( validations ${EIGEN} ${VisionLibs} ${MATPLOTLIB_CPP_LIBRARIES} Python3::Python)
 target_link_libraries( testpoints ${VisionLibs})
 
 # target_sources(controllerPrototype PRIVATE ${CameraFuncs} ${CompFuncs})
