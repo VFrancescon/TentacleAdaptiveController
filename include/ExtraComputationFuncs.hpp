@@ -151,4 +151,7 @@ Vector3d CalculateField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, 
 MatrixXd backwardsQ(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
                     std::vector<PosOrientation> &iPosVec, double fieldMultiplier=1);
 
+
+MatrixXd backwardsQwithField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
+                    std::vector<PosOrientation> &iPosVec, Vector3d field);
 #endif

@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     // timesteps are equal to joint no
     int timesteps = jointEff;
     Vector3d reconciliationAngles = Vector3d{0, 0, 180};
-    double EMulitplier = 30;
+    double EMulitplier = 1;
     
     std::vector<double> DesiredAngles(jointNo);
     if (argc == 6)
@@ -162,22 +162,22 @@ int main(int argc, char *argv[])
     for(auto i: theoreticalPoints){
         PxT.push_back(i.x);
         PyT.push_back(0);
-        PzT.push_back(-i.y);
+        PzT.push_back(i.y);
     }
     calculatedPoints.pop_back();
     std::vector<double> PxC, PyC, PzC;
     for(auto i: calculatedPoints){
         PxC.push_back(i.x);
         PyC.push_back(0);
-        PzC.push_back(-i.y);
+        PzC.push_back(i.y);
     }
 
     std::vector<double> mx, my, mz;
     MagnetisationsOutput.pop_back();
     for(auto i: MagnetisationsOutput){
         mx.push_back(i(0));
-        my.push_back(-i(1));
-        mz.push_back(-i(2));
+        my.push_back(i(1));
+        mz.push_back(i(2));
     }
 
 
@@ -210,10 +210,23 @@ int main(int argc, char *argv[])
     std::transform(theoreticalPoints.begin(), theoreticalPoints.end(),
         theoreticalPoints.begin(), [] (Point2d a) { return Point2d(a.x * 1e3, a.y * 1e3);} );
 
-    for(int k = 0; k < 40; k++){
+    // for(int k = 0; k < 40; k++){
+    int error = 0, prev_error = 0;
+    int d_error = 0;
+    int step_count = 0;
+    double adjuster = EMulitplier;
+    bool firstRun = true;
+    bool finished = false;
+    int baseline_error;
+    int zero_count;
+
+    while(true){
+        
+
+
         plt::clf();
         calculatedPoints.clear();
-        possibleAngles = backwardsQ(iLinks, iJoints, iPosVec, (double) k /10);
+        possibleAngles = backwardsQwithField(iLinks, iJoints, iPosVec, field);
         calculatedPoints = CalcPoints(possibleAngles);
         calculatedPoints.pop_back();
         PxC.clear(); 
@@ -222,14 +235,47 @@ int main(int argc, char *argv[])
         for(auto i: calculatedPoints){
             PxC.push_back(i.x);
             PyC.push_back(0);
-            PzC.push_back(-i.y);
+            PzC.push_back(i.y);
         }
         
-        std::transform(calculatedPoints.begin(), calculatedPoints.end(),
-        calculatedPoints.begin(), [] (Point2d a) { return Point2d(a.x * 1e3, a.y * 1e3);} );
+        // std::transform(calculatedPoints.begin(), calculatedPoints.end(),
+        // calculatedPoints.begin(), [] (Point2d a) { return Point2d(a.x * 1e3, a.y * 1e3);} );
 
-        double pWiseError = positionWiseError(theoreticalPoints, calculatedPoints);
-        std::cout << "Error calced in sim: " << pWiseError << "\n";
+        // error = positionWiseError(theoreticalPoints, calculatedPoints);
+        // if(firstRun){
+        //     firstRun = false;
+        //     baseline_error = error;
+        // }
+        
+        // d_error = prev_error - error;
+        // prev_error = error;
+        // int Kd = derivativeAdjustment(abs(d_error), error); //send abs because we took care of signs a few lines above.
+        // double Kp = (double) error / (double) baseline_error;  // a decimal of the error wrt the baseline
+        // double KpPercent = Kp * 100; // a Percentage of the error wrt the baseline
+        // std::cout << "\n---------------------------------------------------------\n\n";
+
+        // int signFlag = (error < 0 | d_error < 0) ? -1 : 1;
+        // // std::cout << "Error: " << error << "\n";
+        // // std::cout << "d_error: " << d_error << "\n";
+        // // std::cout << "SignFlag " << signFlag << "\n";
+        // error = abs(error);
+
+        // // if( KpPercent < 21 ){
+        // //     finished = true;
+        // // } else if( KpPercent < 35) {
+        // //     adjuster += 0.1 * signFlag ;
+        // // } else {
+        // //     adjuster += 1 * signFlag ;
+        // // }
+        // std::cout << "Kp Percent: " << KpPercent << "\n";
+
+        // if(finished){
+        //     continue;
+        // }
+        // adjuster += 0.01 * signFlag;
+
+
+        // std::cout << "Error calced in sim: " << error << "\n";
         plt::plot(PxT, PzT, keywordsPT);
         plt::plot(PxC, PzC, keywordsPC);
         plt::quiver(PxC, PzC, mx, mz, keywordsQuiverMag);
@@ -241,9 +287,17 @@ int main(int argc, char *argv[])
         plt::legend();
         // plt::show();
         // plt::clf();
-        plt::pause(1);
-        std::cout << "New Iter. k = " << (double) k / 10 << "\n";
+        plt::pause(2);
+        // std::cout << "New Iter. adjuster = " << adjuster << "\n";
+        field(1) = 0;
+        std::cout << "End of iter. field:\n" << 
+                field(0) << "    " << (field(0) *= 1.2) << "\n" <<
+                "0.0000" << " -> " << "0.0000" << "\n" <<
+                field(2) << "    " << (field(2) *= 1.2) << "\n";
+        field *= 1.2;
     }
+
+
     // std::cout << "Backwards angles:\n"
     //           << possibleAngles << "\n";
     plt::close();
