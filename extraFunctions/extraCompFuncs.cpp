@@ -329,8 +329,8 @@ Vector3d CalculateField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
     MatrixXd GravWrench = Jt * StackedGrav;
     // std::cout << "GravWrench\n" << GravWrench << "\n";
     // std::cout << "Jt\n" << Jt << "\n";
-    MatrixXd LHS = KStacked * AnglesStacked + GravWrench;
-    // MatrixXd LHS = KStacked * AnglesStacked ;
+    // MatrixXd LHS = KStacked * AnglesStacked + GravWrench;
+    MatrixXd LHS = KStacked * AnglesStacked ;
 
     // std::cout <<"Solve breaks\n";s
     // std::cout << "LHS\n" << LHS << "\n";
@@ -381,8 +381,8 @@ MatrixXd backwardsQ(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
     // "\nKStackedINV: " << KStacked.inverse().rows() << "x" << KStacked.inverse().cols() 
     // << "\n";
     MatrixXd KInv = KStacked.inverse();
-    std::cout << "Field pre adjustment: " << solution << "\n";
-    std::cout << "Adjuster " << fieldMultiplier << " Adjusted fiedld\n " << solution * fieldMultiplier << "\n";
+    // std::cout << "Field pre adjustment: " << solution << "\n";
+    // std::cout << "Adjuster " << fieldMultiplier << " Adjusted fiedld\n " << solution * fieldMultiplier << "\n";
     // MatrixXd BackwardsAngles = KInv* (RHS * solution);
     MatrixXd BackwardsAngles = KInv* (RHS * solution * fieldMultiplier - GravWrench);
     
@@ -427,8 +427,8 @@ MatrixXd backwardsQwithField(std::vector<Link> &iLinks, std::vector<Joint> &iJoi
     
     MatrixXd KInv = KStacked.inverse();
     // std::cout << "Field pre adjustment: " << field << "\n";
-    // MatrixXd BackwardsAngles = KInv* (RHS * solution);
-    MatrixXd BackwardsAngles = KInv* (RHS * field - GravWrench);
+    MatrixXd BackwardsAngles = KInv* (RHS * field);
+    // MatrixXd BackwardsAngles = KInv* (RHS * field - GravWrench);
     
     
     return BackwardsAngles;

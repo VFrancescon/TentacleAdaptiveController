@@ -102,6 +102,22 @@ inline int positionWiseError(std::vector<Point2d> idealPoints, std::vector<Point
     return error;
 }
 
+inline int positionWiseError(std::vector<Vector3d> idealPoints, std::vector<Vector3d> observedPoints){
+    double avg;
+    double error;
+    std::vector<double> scaledValues;
+    for(int i = 0; i < idealPoints.size(); i++){
+        double ithxDiff = observedPoints[i](0) - idealPoints[i](0);
+        double ithyDiff = observedPoints[i](2) - idealPoints[i](2);
+        double ithDistance = std::sqrt(ithxDiff*ithxDiff + ithyDiff*ithyDiff);
+        // std::cout << "i : " << i << " distance " << ithDistance << "\n";
+        scaledValues.push_back(ithDistance*i+1);
+    }
+    avg = avgVect(scaledValues);
+    error = avg;
+    return error;
+}
+
 inline int derivativeAdjustment(double d_error, int error){
     //The higher the error, the smaller the return value
     //we apply it to:
@@ -110,16 +126,16 @@ inline int derivativeAdjustment(double d_error, int error){
 
     int scaledDiff = (int) ( d_error / (double) error * 100);
     // std::cout << "d_error: " << d_error << " - error: " << error 
-    std::cout << " scaledDiff: " << scaledDiff << "\n";
+    // std::cout << " scaledDiff: " << scaledDiff << "\n";
     switch(scaledDiff){
         case 0 ... 5: 
             // std::cout << "Kd = " << 4 << "\n";
-            return 4;
+            return 8;
         break;
 
         case 6 ... 20: 
             // std::cout << "Kd = " << 2 << "\n";
-            return 2;
+            return 4;
         break;
 
         case 21 ... 60:
