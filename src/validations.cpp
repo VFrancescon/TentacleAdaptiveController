@@ -245,6 +245,7 @@ int main(int argc, char *argv[])
     int zero_count;
     double adjuster = 1;
     int pic_counter = 0;
+    double KpOLD = 1, Kp = 0;
 
     while(true){
         
@@ -268,22 +269,26 @@ int main(int argc, char *argv[])
                 ") = (" << baseline_error-error <<")\n";
         
         prev_error = error;
-
-        double Kp = (double) error / (double) baseline_error;  // a decimal of the error wrt the baseline
         
+        Kp = (double) error / (double) baseline_error;  // a decimal of the error wrt the baseline
+        std::cout << "!firstRun " << !firstRun << " Kp " << Kp << " KpOld " << KpOLD << "\n";
+        if(!firstRun && Kp > KpOLD){
+            finished = true;
+        } else KpOLD = Kp;
+
         double KpPercent = Kp * 100; // a Percentage of the error wrt the baseline
         // int signFlag = (error < 0 | d_error < 0) ? -1 : 1;
         double Kd;
         switch( (int) KpPercent) {
-            case 0 ... 10:
+            case 0 ... 40:
                 Kd = 8; 
             break;
 
-            case 11 ... 20:
+            case 41 ... 60:
                 Kd = 4;
             break;
 
-            case 21 ... 40:
+            case 61 ... 80:
                 Kd = 2;
             break;
 
@@ -305,13 +310,15 @@ int main(int argc, char *argv[])
 
         if(baseline_error - error < 0 ) signFlag = -1;
         else signFlag = 1;
-        
+
         std::cout <<
                 " KpPercent: " << KpPercent  << 
                 " Kp " << Kp << 
                 " Kd " << Kd << 
                 " signFlag " << signFlag << "\n";
-        if( abs(error) < 5 || abs(KpPercent) < 20){
+
+        // if kp is larger than KpOld
+        if(finished) {
             std::cout << "Error( " << error <<  ") - baseline(" << baseline_error << ")\n";
             std::cout << "Victory\n";
             finished = true;
@@ -331,10 +338,11 @@ int main(int argc, char *argv[])
         
         
         field(1) = 0;
+        Vector3d increment = field * signFlag * Kp/10 ;
         std::cout << "field: " <<"\n" << 
-                field(0) << " +  " << field(0) * 0.1 * signFlag << " = " << field(0) + field(0) * 0.1 * signFlag << "\n" <<
+                field(0) << " +  " << increment(0) << " = " << field(0) + increment(0) << "\n" <<
                 "0.000000" << " + " << "0.000000" << " = " << "0.00000" << "\n" <<
-                field(2) << " +  " << field(2) * 0.1 * signFlag << " = " << field(2) + field(2) * 0.1 * signFlag << "\n";
+                field(2) << " +  " << increment(2) << " = " << field(2) + increment(2) << "\n";
         
         
 
@@ -342,7 +350,7 @@ int main(int argc, char *argv[])
         //     field = backupField;
         //     continue;
         // }
-        field += field * 0.1 * signFlag;
+        field += increment;
 
         std::vector<double> fqX = {PxC[1]}; 
         std::vector<double> fqY ={PzC[3]}; 
