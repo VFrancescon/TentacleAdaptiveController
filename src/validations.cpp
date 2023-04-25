@@ -90,20 +90,23 @@ int main(int argc, char *argv[])
     std::vector<double> DesiredAngles(jointNo);
     if (argc == 6)
     {
+        std::cout << "Using CLI angles: ";
         DesiredAngles[0] = std::stod(argv[1]);
         DesiredAngles[1] = std::stod(argv[2]);
         DesiredAngles[2] = std::stod(argv[3]);
         DesiredAngles[3] = std::stod(argv[4]);
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
+        for(auto i : DesiredAngles) std::cout << " " << i;
     } else {
-        DesiredAngles[0] = 45;
-        DesiredAngles[1] = 0;
-        DesiredAngles[2] = 0;
-        DesiredAngles[3] = 0;
-        DesiredAngles[4] = 10;
+        DesiredAngles[0] = 10;
+        DesiredAngles[1] = 10;
+        DesiredAngles[2] = 10;
+        DesiredAngles[3] = 20;
+        DesiredAngles[4] = 20;
         DesiredAngles[jointEff] = 0;
     }
+    std::cout << "\n";
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
      *                                               *
@@ -241,10 +244,9 @@ int main(int argc, char *argv[])
     int baseline_error;
     int zero_count;
     double adjuster = 1;
+    int pic_counter = 0;
 
-    // for(int k = 0; k < 40; k++){
     while(true){
-        plt::clf();
         
         
         // int Kd = derivativeAdjustment(abs(d_error), error); //send abs because we took care of signs a few lines above.
@@ -253,16 +255,17 @@ int main(int argc, char *argv[])
             error = baseline_error;
             firstRun = false;
             prev_error = 0;
-
+            plt::show();
             continue;
         }
+        std::cout << "\n---------------------------------------------------------\n";
         error = positionWiseError(theoreticalPoints, calculatedPoints);
         d_error = prev_error - error;
         std::cout << "prev_error(" << prev_error << ") - error(" << error << 
                 ") = d_error(" << d_error << 
-                "\nBaseline Error( " << baseline_error <<  
+                ")\nbaseline_error( " << baseline_error <<  
                 ") - error(" << error << 
-                ") = " << baseline_error-error <<")\n";
+                ") = (" << baseline_error-error <<")\n";
         
         prev_error = error;
 
@@ -289,11 +292,19 @@ int main(int argc, char *argv[])
             break;
         }
 
-        int signFlag;
+        int signFlag = 1;
 
-        if(d_error < 0) {
-            signFlag = -1;
-        } else signFlag = 1;
+        // if(d_error < 0) {
+        //     signFlag = -1;
+        // } else signFlag = 1;
+
+        // if(KpPercent > 100) {
+        //     signFlag = !signFlag;
+        // }
+        // if (signFlag == 0 ) signFlag = -1;
+
+        if(baseline_error - error < 0 ) signFlag = -1;
+        else signFlag = 1;
         
         std::cout <<
                 " KpPercent: " << KpPercent  << 
@@ -307,33 +318,31 @@ int main(int argc, char *argv[])
             plt::show();
             break;
         } 
-        // else if( KpPercent < 30){
-        //     std::cout << "Small adj\n";
-        //     adjuster += Kp*signFlag*Kd;
-        // } 
-        // else {
-        //     std::cout << "Big adj\n";
-        //     adjuster += 1*signFlag;
-        // }
-        if( error - baseline_error > 0 ){
-            adjuster += 0.01;
-        } else {
-            adjuster -= 0.01;
+        // std::cout << "Calced erros and next action\n";
+        // std::cin.get();
+        else if( KpPercent < 30){
+            std::cout << "Small adj\n";
+            adjuster += Kp*signFlag*Kd;
+        } 
+        else {
+            std::cout << "Big adj\n";
+            adjuster += 1*signFlag;
         }
-        adjuster = 1;
+        
+        
         field(1) = 0;
-        std::cout << "End of iter. Adjuster: "<< adjuster << " field: " <<"\n" << 
-                field(0) << "    " << (field(0) *= adjuster) << "\n" <<
-                "0.000000" << " -> " << "0.000000" << "\n" <<
-                field(2) << "    " << (field(2) *= adjuster) << "\n";
+        std::cout << "field: " <<"\n" << 
+                field(0) << " +  " << field(0) * 0.1 * signFlag << " = " << field(0) + field(0) * 0.1 * signFlag << "\n" <<
+                "0.000000" << " + " << "0.000000" << " = " << "0.00000" << "\n" <<
+                field(2) << " +  " << field(2) * 0.1 * signFlag << " = " << field(2) + field(2) * 0.1 * signFlag << "\n";
         
-        if (field(0) < 1e-4  && field(2) < 1e-4) {
-            field = backupField;
-            continue;
-        }
         
-        std::cout << "\n---------------------------------------------------------\n";
-        field += field * 0.2 * signFlag;
+
+        // if (field(0) < 1e-4  && field(2) < 1e-4) {
+        //     field = backupField;
+        //     continue;
+        // }
+        field += field * 0.1 * signFlag;
 
         std::vector<double> fqX = {PxC[1]}; 
         std::vector<double> fqY ={PzC[3]}; 
@@ -355,7 +364,11 @@ int main(int argc, char *argv[])
             PzC.push_back(i(2));
         }
 
+        // std::cout << "SIZINGS\n";
+        // std::cout << "PxT. X:" << PxT.size() << " PzT: " << PzT.size() << "\n";
+        // std::cout << "PxC. X:" << PxT.size() << " PzC: " << PzC.size() << "\n";
 
+        plt::clf();
         plt::quiver( fqX, fqY, fqU, fqV, keywordsQuiverFeild);
         plt::plot(PxT, PzT, keywordsPT);
         plt::plot(PxC, PzC, keywordsPC);
@@ -367,8 +380,11 @@ int main(int argc, char *argv[])
         plt::grid(true);
         plt::legend();
         // plt::show();
-        // plt::clf();
-        plt::pause(2);
+        // std::string imgOut = date + std::to_string(step_count);
+        // plt::save( imgOut);
+        // step_count++;
+        plt::pause(0.5);
+        // std::cin.get();
     }
     // std::cout << "Backwards angles:\n"
     //           << possibleAngles << "\n";
