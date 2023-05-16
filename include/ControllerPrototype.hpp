@@ -111,7 +111,8 @@ inline int positionWiseError(std::vector<Vector3d> idealPoints, std::vector<Vect
         double ithyDiff = observedPoints[i](2) - idealPoints[i](2);
         double ithDistance = std::sqrt(ithxDiff*ithxDiff + ithyDiff*ithyDiff);
         // std::cout << "i : " << i << " distance " << ithDistance << "\n";
-        scaledValues.push_back(ithDistance*i+1);
+        if(i == idealPoints.size() - 1 ) scaledValues.push_back(ithDistance*i+2);
+        else scaledValues.push_back(ithDistance*i+1);
     }
     avg = avgVect(scaledValues);
     error = avg;
