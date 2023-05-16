@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
     //         break;
     //     }
 
-    //     int signFlag = 1;
+        int signFlag = 1;
 
     //     // if(d_error < 0) {
     //     //     signFlag = -1;
