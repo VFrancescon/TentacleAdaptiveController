@@ -422,7 +422,7 @@ int main(int argc, char *argv[])
     //     // step_count++;
     //     plt::pause(0.5);
     //     std::cin.get();
-    // }
+    }
     // std::cout << "Backwards angles:\n"
     //           << possibleAngles << "\n";
     plt::close();
