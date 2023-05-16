@@ -61,6 +61,36 @@ std::vector<Vector3d> CalcPoints(std::vector<double> angles)
     return pointsVect;
 }
 
+MatrixXd backwardsQwithField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
+                    std::vector<PosOrientation> &iPosVec, Vector3d field){
+    MatrixXd KStacked;
+    KStacked = EvaluateK(iLinks);
+    VectorXd AnglesStacked;
+    AnglesStacked = StackAngles(iJoints);
+
+    DirectKinematics(iPosVec, iJoints, iLinks);
+    MatrixXd Jacobian, Jt;
+    Jacobian = EvaluateJacobian(iPosVec);
+
+    Jt = Jacobian.transpose();
+
+    MatrixXd FieldMap;
+    FieldMap = MagtoFieldMap(iJoints);
+
+    MatrixXd RHS = Jt * FieldMap;
+
+    float density = 1000;
+    float v1 = iLinks[0].dL * (M_PI * pow(iLinks[0].d / 2, 2));
+    float mass = density * v1;
+
+    MatrixXd LHS = KStacked * AnglesStacked;
+    
+
+    MatrixXd anglesBack = KStacked.colPivHouseholderQr().solve(Jt * FieldMap * field);
+
+    return anglesBack;
+}
+
 int main(int argc, char *argv[])
 {
     /**
@@ -85,7 +115,7 @@ int main(int argc, char *argv[])
     // timesteps are equal to joint no
     int timesteps = jointEff;
     Vector3d reconciliationAngles = Vector3d{0, 0, 180};
-    double EMulitplier = 1;
+    double EMulitplier = 2;
     
     std::vector<double> DesiredAngles(jointNo);
     if (argc == 6)
@@ -99,11 +129,11 @@ int main(int argc, char *argv[])
         DesiredAngles[jointEff] = 0;
         for(auto i : DesiredAngles) std::cout << " " << i;
     } else {
-        DesiredAngles[0] = 10;
-        DesiredAngles[1] = 10;
-        DesiredAngles[2] = 10;
-        DesiredAngles[3] = 20;
-        DesiredAngles[4] = 20;
+        DesiredAngles[0] = 45;
+        DesiredAngles[1] = 45;
+        DesiredAngles[2] = 45;
+        DesiredAngles[3] = 0;
+        DesiredAngles[4] = 90;
         DesiredAngles[jointEff] = 0;
     }
     std::cout << "\n";
@@ -143,8 +173,7 @@ int main(int argc, char *argv[])
     Vector3d backupField = field / 1000;
     field = RotateField(field, Vector3d(0,0,0));
     // Vector3d field = Vector3d(0,0,0);
-    Vector3d fedbackField = Vector3d( field(0)/1000, field(1)/1000, field(2)/1000);
-    MatrixXd possibleAngles = backwardsQwithField(iLinks, iJoints, iPosVec, fedbackField );
+    MatrixXd possibleAngles = backwardsQwithField(iLinks, iJoints, iPosVec, field / 1000);
     std::cout << "Initial answer:\n"
               << field << "\n";
 
@@ -226,166 +255,166 @@ int main(int argc, char *argv[])
     keywordsQuiverFeild["label"] = "field";
 
     //out-of-loop plot
-    // plt::plot(PxT, PzT, keywordsPT);
-    // plt::plot(PxC, PzC, keywordsPC);
-    // plt::quiver(PxC, PzC, mx, mz, keywordsQuiverMag);
-    // plt::grid(true);
-    // plt::xlabel("X Axis");
-    // plt::ylabel("Z Axis");
-    // plt::legend();
-    // plt::show();
+    plt::plot(PxT, PzT, keywordsPT);
+    plt::plot(PxC, PzC, keywordsPC);
+    plt::quiver(PxC, PzC, mx, mz, keywordsQuiverMag);
+    plt::grid(true);
+    plt::xlabel("X Axis");
+    plt::ylabel("Z Axis");
+    plt::legend();
+    plt::show();
     
-    int jointsCached = 0;
-    int error = 0, prev_error = 0;
-    int d_error = 0;
-    int step_count = 0;
-    bool firstRun = true;
-    bool finished = false;
-    int baseline_error;
-    int zero_count;
-    double adjuster = 1;
-    int pic_counter = 0;
+    // int jointsCached = 0;
+    // int error = 0, prev_error = 0;
+    // int d_error = 0;
+    // int step_count = 0;
+    // bool firstRun = true;
+    // bool finished = false;
+    // int baseline_error;
+    // int zero_count;
+    // double adjuster = 1;
+    // int pic_counter = 0;
 
-    while(true){
+    // while(true){
         
         
-        // int Kd = derivativeAdjustment(abs(d_error), error); //send abs because we took care of signs a few lines above.
-        if(firstRun){
-            baseline_error = positionWiseError(theoreticalPoints, calculatedPoints);
-            error = baseline_error;
-            firstRun = false;
-            prev_error = 0;
-            plt::show();
-            continue;
-        }
-        std::cout << "\n---------------------------------------------------------\n";
-        error = positionWiseError(theoreticalPoints, calculatedPoints);
-        d_error = prev_error - error;
-        std::cout << "prev_error(" << prev_error << ") - error(" << error << 
-                ") = d_error(" << d_error << 
-                ")\nbaseline_error( " << baseline_error <<  
-                ") - error(" << error << 
-                ") = (" << baseline_error-error <<")\n";
+    //     // int Kd = derivativeAdjustment(abs(d_error), error); //send abs because we took care of signs a few lines above.
+    //     if(firstRun){
+    //         baseline_error = positionWiseError(theoreticalPoints, calculatedPoints);
+    //         error = baseline_error;
+    //         firstRun = false;
+    //         prev_error = 0;
+    //         plt::show();
+    //         continue;
+    //     }
+    //     std::cout << "\n---------------------------------------------------------\n";
+    //     error = positionWiseError(theoreticalPoints, calculatedPoints);
+    //     d_error = prev_error - error;
+    //     std::cout << "prev_error(" << prev_error << ") - error(" << error << 
+    //             ") = d_error(" << d_error << 
+    //             ")\nbaseline_error( " << baseline_error <<  
+    //             ") - error(" << error << 
+    //             ") = (" << baseline_error-error <<")\n";
         
-        prev_error = error;
+    //     prev_error = error;
 
-        double Kp = (double) error / (double) baseline_error;  // a decimal of the error wrt the baseline
+    //     double Kp = (double) error / (double) baseline_error;  // a decimal of the error wrt the baseline
         
-        double KpPercent = Kp * 100; // a Percentage of the error wrt the baseline
-        // int signFlag = (error < 0 | d_error < 0) ? -1 : 1;
-        double Kd;
-        switch( (int) KpPercent) {
-            case 0 ... 10:
-                Kd = 8; 
-            break;
+    //     double KpPercent = Kp * 100; // a Percentage of the error wrt the baseline
+    //     // int signFlag = (error < 0 | d_error < 0) ? -1 : 1;
+    //     double Kd;
+    //     switch( (int) KpPercent) {
+    //         case 0 ... 10:
+    //             Kd = 8; 
+    //         break;
 
-            case 11 ... 20:
-                Kd = 4;
-            break;
+    //         case 11 ... 20:
+    //             Kd = 4;
+    //         break;
 
-            case 21 ... 40:
-                Kd = 2;
-            break;
+    //         case 21 ... 40:
+    //             Kd = 2;
+    //         break;
 
-            default:
-                Kd = 1;
-            break;
-        }
+    //         default:
+    //             Kd = 1;
+    //         break;
+    //     }
 
-        int signFlag = 1;
+    //     int signFlag = 1;
 
-        // if(d_error < 0) {
-        //     signFlag = -1;
-        // } else signFlag = 1;
+    //     // if(d_error < 0) {
+    //     //     signFlag = -1;
+    //     // } else signFlag = 1;
 
-        // if(KpPercent > 100) {
-        //     signFlag = !signFlag;
-        // }
-        // if (signFlag == 0 ) signFlag = -1;
+    //     // if(KpPercent > 100) {
+    //     //     signFlag = !signFlag;
+    //     // }
+    //     // if (signFlag == 0 ) signFlag = -1;
 
-        if(baseline_error - error < 0 ) signFlag = -1;
-        else signFlag = 1;
+    //     if(baseline_error - error < 0 ) signFlag = -1;
+    //     else signFlag = 1;
         
-        std::cout <<
-                " KpPercent: " << KpPercent  << 
-                " Kp " << Kp << 
-                " Kd " << Kd << 
-                " signFlag " << signFlag << "\n";
-        if( abs(error) < 5 || abs(KpPercent) < 20){
-            std::cout << "Error( " << error <<  ") - baseline(" << baseline_error << ")\n";
-            std::cout << "Victory\n";
-            finished = true;
-            plt::show();
-            break;
-        } 
-        // std::cout << "Calced erros and next action\n";
-        // std::cin.get();
-        else if( KpPercent < 30){
-            std::cout << "Small adj\n";
-            adjuster += Kp*signFlag*Kd;
-        } 
-        else {
-            std::cout << "Big adj\n";
-            adjuster += 1*signFlag;
-        }
-        
-        
-        field(1) = 0;
-        std::cout << "field: " <<"\n" << 
-                field(0) << " +  " << field(0) * 0.1 * signFlag << " = " << field(0) + field(0) * 0.1 * signFlag << "\n" <<
-                "0.000000" << " + " << "0.000000" << " = " << "0.00000" << "\n" <<
-                field(2) << " +  " << field(2) * 0.1 * signFlag << " = " << field(2) + field(2) * 0.1 * signFlag << "\n";
+    //     std::cout <<
+    //             " KpPercent: " << KpPercent  << 
+    //             " Kp " << Kp << 
+    //             " Kd " << Kd << 
+    //             " signFlag " << signFlag << "\n";
+    //     if( abs(error) < 5 || abs(KpPercent) < 20){
+    //         std::cout << "Error( " << error <<  ") - baseline(" << baseline_error << ")\n";
+    //         std::cout << "Victory\n";
+    //         finished = true;
+    //         plt::show();
+    //         break;
+    //     } 
+    //     // std::cout << "Calced erros and next action\n";
+    //     // std::cin.get();
+    //     else if( KpPercent < 30){
+    //         std::cout << "Small adj\n";
+    //         adjuster += Kp*signFlag*Kd;
+    //     } 
+    //     else {
+    //         std::cout << "Big adj\n";
+    //         adjuster += 1*signFlag;
+    //     }
         
         
-
-        // if (field(0) < 1e-4  && field(2) < 1e-4) {
-        //     field = backupField;
-        //     continue;
-        // }
-        field += field * 0.1 * signFlag;
-
-        std::vector<double> fqX = {PxC[1]}; 
-        std::vector<double> fqY ={PzC[3]}; 
-        std::vector<double> fqU ={(field(0))}; 
-        std::vector<double> fqV ={(field(2))};
-
-        fedbackField = Vector3d( field(0)/1000, field(1)/1000, field(2)/1000);
+    //     field(1) = 0;
+    //     std::cout << "field: " <<"\n" << 
+    //             field(0) << " +  " << field(0) * 0.1 * signFlag << " = " << field(0) + field(0) * 0.1 * signFlag << "\n" <<
+    //             "0.000000" << " + " << "0.000000" << " = " << "0.00000" << "\n" <<
+    //             field(2) << " +  " << field(2) * 0.1 * signFlag << " = " << field(2) + field(2) * 0.1 * signFlag << "\n";
         
-        calculatedPoints.clear();
-        possibleAngles = backwardsQwithField(iLinks, iJoints, iPosVec, fedbackField);
-        calculatedPoints = CalcPoints(possibleAngles);
-        calculatedPoints.pop_back();
-        PxC.clear(); 
-        PyC.clear(); 
-        PzC.clear();
-        for(auto i: calculatedPoints){
-            PxC.push_back(i(0));
-            PyC.push_back(i(1));
-            PzC.push_back(i(2));
-        }
+        
 
-        // std::cout << "SIZINGS\n";
-        // std::cout << "PxT. X:" << PxT.size() << " PzT: " << PzT.size() << "\n";
-        // std::cout << "PxC. X:" << PxT.size() << " PzC: " << PzC.size() << "\n";
+    //     // if (field(0) < 1e-4  && field(2) < 1e-4) {
+    //     //     field = backupField;
+    //     //     continue;
+    //     // }
+    //     field += field * 0.1 * signFlag;
 
-        plt::clf();
-        plt::quiver( fqX, fqY, fqU, fqV, keywordsQuiverFeild);
-        plt::plot(PxT, PzT, keywordsPT);
-        plt::plot(PxC, PzC, keywordsPC);
-        plt::quiver(PxC, PzC, mx, mz, keywordsQuiverMag);
-        plt::xlabel("X Axis");
-        plt::ylabel("Y Axis");
-        // plt::set_zlabel("z label"); // set_zlabel rather than just zlabel, in accordance with the Axes3D method
-        plt::title("Validation");
-        plt::grid(true);
-        plt::legend();
-        // plt::show();
-        // std::string imgOut = date + std::to_string(step_count);
-        // plt::save( imgOut);
-        // step_count++;
-        plt::pause(0.5);
-        // std::cin.get();
-    }
+    //     std::vector<double> fqX = {PxC[1]}; 
+    //     std::vector<double> fqY ={PzC[3]}; 
+    //     std::vector<double> fqU ={(field(0))}; 
+    //     std::vector<double> fqV ={(field(2))};
+
+    //     fedbackField = Vector3d( field(0)/1000, field(1)/1000, field(2)/1000);
+        
+    //     calculatedPoints.clear();
+    //     possibleAngles = backwardsQwithField(iLinks, iJoints, iPosVec, fedbackField);
+    //     calculatedPoints = CalcPoints(possibleAngles);
+    //     calculatedPoints.pop_back();
+    //     PxC.clear(); 
+    //     PyC.clear(); 
+    //     PzC.clear();
+    //     for(auto i: calculatedPoints){
+    //         PxC.push_back(i(0));
+    //         PyC.push_back(i(1));
+    //         PzC.push_back(i(2));
+    //     }
+
+    //     // std::cout << "SIZINGS\n";
+    //     // std::cout << "PxT. X:" << PxT.size() << " PzT: " << PzT.size() << "\n";
+    //     // std::cout << "PxC. X:" << PxT.size() << " PzC: " << PzC.size() << "\n";
+
+    //     plt::clf();
+    //     plt::quiver( fqX, fqY, fqU, fqV, keywordsQuiverFeild);
+    //     plt::plot(PxT, PzT, keywordsPT);
+    //     plt::plot(PxC, PzC, keywordsPC);
+    //     plt::quiver(PxC, PzC, mx, mz, keywordsQuiverMag);
+    //     plt::xlabel("X Axis");
+    //     plt::ylabel("Y Axis");
+    //     // plt::set_zlabel("z label"); // set_zlabel rather than just zlabel, in accordance with the Axes3D method
+    //     plt::title("Validation");
+    //     plt::grid(true);
+    //     plt::legend();
+    //     // plt::show();
+    //     // std::string imgOut = date + std::to_string(step_count);
+    //     // plt::save( imgOut);
+    //     // step_count++;
+    //     plt::pause(0.5);
+    //     std::cin.get();
+    // }
     // std::cout << "Backwards angles:\n"
     //           << possibleAngles << "\n";
     plt::close();
