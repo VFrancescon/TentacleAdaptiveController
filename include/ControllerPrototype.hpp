@@ -131,17 +131,17 @@ inline int derivativeAdjustment(double d_error, int error){
     switch(scaledDiff){
         case 0 ... 5: 
             // std::cout << "Kd = " << 4 << "\n";
-            return 8;
+            return 16;
         break;
 
         case 6 ... 20: 
             // std::cout << "Kd = " << 2 << "\n";
-            return 4;
+            return 8;
         break;
 
         case 21 ... 60:
             // std::cout << "Kd = " << 2 << "\n";
-            return 2;
+            return 4;
         break;
 
         default:

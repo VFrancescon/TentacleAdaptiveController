@@ -23,8 +23,8 @@ int main(int argc, char *argv[]) {
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{0, 0, 180};
-    double EMultiplier = 5;
+    Vector3d reconciliationAngles = Vector3d{0, 0, 00};
+    double EMultiplier = 15;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
      * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
         std::cout << "\n-------------------------------------------------------"
                      "--\n\n";
 
-        int signFlag = (d_error < 0) ? -1 : 1;
+        int signFlag = (Kp > 100) ? -1 : 1;
         std::cout << "Baseline " << baseline_error;
         std::cout << "\nError " << error << " d_error " << d_error;
         std::cout << " -> Kd " << Kd << " ";
