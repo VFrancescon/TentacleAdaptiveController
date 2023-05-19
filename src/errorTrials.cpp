@@ -58,16 +58,53 @@ int main(int argc, char* argv[]){
     int rrows = pre_img.rows * 3 / 8;
     int rcols = pre_img.cols * 3 / 8;
     Point p0 = Point{-2000, 2000};
+    intr_mask = IntroducerMask(pre_img);
+    int jointsCached = 0;
+    int error = 0, prev_error = 0;
+    int d_error = 0;
+    int step_count = 0;
+    bool firstRun = true;
+    bool finished = false;
+    int baseline_error;
+    int zero_count;
+    std::vector<Vector3d> Magnetisations(jointNo);
+    Magnetisations[0] = Vector3d(-0.0011, 0, -0.0028);
+    Magnetisations[1] = Vector3d(-0.0028, 0, -0.001);
+    Magnetisations[2] = Vector3d(0, 0, -0.003);
+    Magnetisations[3] = Vector3d(-0.003, 0, 0);
+    Magnetisations[4] = Vector3d(0, 0, -0.003);
+    Magnetisations[jointEff] = Vector3d(0, 0, 0);
+
+    std::vector<PosOrientation> iPosVec(jointNo);
+    std::vector<Joint> iJoints(jointNo);
+    for (int i = 0; i < jointNo; i++) {
+        iJoints[i].assignPosOri(iPosVec[i]);
+    }
+
+    for (int i = 0; i < jointNo; i++) {
+        iJoints[i].q = Vector3d(0, DesiredAngles[i] * M_PI / 180, 0);
+        iJoints[i].LocMag = Magnetisations[i];
+    }
+    int EMultiplier = 1;
+    // create vector of links for properties
+    std::vector<Link> iLinks(jointEff);
+    adjustStiffness(iLinks, EMultiplier);
+    Vector3d reconciliationAngles = Vector3d{0, 0, 180};
+    Vector3d field = CalculateField(iLinks, iJoints, iPosVec);
+    field = RotateField(field, reconciliationAngles);
+    field(1) = 0;
 
     while (camera.IsGrabbing())
     {
-        camera.RetrieveResult(5000, ptrGrabResult, Pylon::TimeoutHandling_ThrowException);
+        camera.RetrieveResult(5000, ptrGrabResult,
+                              Pylon::TimeoutHandling_ThrowException);
         const uint8_t *pImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
         formatConverter.Convert(pylonImage, ptrGrabResult);
-        post_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(), CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
+        post_img =
+            cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
+                    CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
 
-        if (post_img.empty())
-        {
+        if (post_img.empty()) {
             break;
         }
         resize(post_img, post_img, Size(rcols, rrows), INTER_LINEAR);
@@ -76,7 +113,8 @@ int main(int argc, char* argv[]){
 
         cvtColor(post_img, post_img_grey, COLOR_BGR2GRAY);
         blur(post_img_grey, post_img_grey, Size(5, 5));
-        threshold(post_img_grey, post_img_th, threshold_low, threshold_high, THRESH_BINARY_INV);
+        threshold(post_img_grey, post_img_th, threshold_low, threshold_high,
+                  THRESH_BINARY_INV);
         // post_img_th.copyTo(post_img_masked, intr_mask);
         post_img_th.copyTo(post_img_masked);
 
@@ -85,39 +123,38 @@ int main(int argc, char* argv[]){
 
         Joints = findJoints(post_img_masked, contours);
         int JointsObserved = Joints.size();
-        for (auto i : Joints)
-        {
+        for (auto i : Joints) {
             circle(post_img, i, 4, Scalar(255, 0, 0), FILLED);
         }
         drawContours(post_img, contours, -1, Scalar(255, 255, 0));
         std::vector<double> angles;
+        std::vector<double> desiredAngles_ =
+            std::vector<double>(DesiredAngles.begin(), DesiredAngles.end() - 1);
         std::vector<Point> idealPoints;
         // if (p0 == Point{-2000, 2000})
-            p0 = Joints[0];
+        p0 = Joints[0];
 
         idealPoints = computeIdealPoints(p0, DesiredAngles);
-        // std::cout << "Desired angles slice size: " << DesiredAngles.size() << "\n";
+        // std::cout << "Desired angles slice size: " << DesiredAngles.size() <<
+        // "\n";
 
         angles = computeAngles(Joints);
-        for (int i = 0; i < idealPoints.size() - 1; i++)
-        {
+        for (int i = 0; i < idealPoints.size() - 1; i++) {
             // std::cout << " " << i;
-            line(post_img, idealPoints[i], idealPoints[i + 1], Scalar(0, 0, 255), 2);
+            line(post_img, idealPoints[i], idealPoints[i + 1],
+                 Scalar(0, 0, 255), 2);
             circle(post_img, idealPoints[i], 3, Scalar(0, 255, 0), FILLED);
             putText(post_img, std::to_string(i), idealPoints[i],
                     FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
         }
         // std::cout << "\n";
-        circle(post_img, idealPoints[ idealPoints.size()-1], 3, Scalar(0, 255, 0), FILLED);
-        putText(post_img, std::to_string(idealPoints.size()-1), idealPoints[idealPoints.size() -1],
-                FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
-        angles = computeAngles(Joints);
-        for (int i = 0; i < idealPoints.size() - 1; i++)
-        {
-            line(post_img, idealPoints[i], idealPoints[i + 1], Scalar(0, 0, 255), 2);
-            circle(post_img, idealPoints[i], 3, Scalar(0, 255, 0), FILLED);
-        }
+        circle(post_img, idealPoints[idealPoints.size() - 1], 3,
+               Scalar(0, 255, 0), FILLED);
+        putText(post_img, std::to_string(idealPoints.size() - 1),
+                idealPoints[idealPoints.size() - 1], FONT_HERSHEY_SIMPLEX, 1.0,
+                Scalar(255, 0, 0));
 
+        // #region legend
         /**
          * @brief DRAW A LEGEND
          */
@@ -126,47 +163,80 @@ int main(int argc, char* argv[]){
         cv::Point InnerTopLeftLegend(4, 404);
         cv::Point InnerBottomRightLegend(196, 446);
 
-        rectangle(post_img, TopLeftLegend, BottomRightLegend, Scalar(0, 0, 0), 4);
-        rectangle(post_img, InnerTopLeftLegend, InnerBottomRightLegend, Scalar(255, 255, 255), 1);
+        rectangle(post_img, TopLeftLegend, BottomRightLegend, Scalar(0, 0, 0),
+                  4);
+        rectangle(post_img, InnerTopLeftLegend, InnerBottomRightLegend,
+                  Scalar(255, 255, 255), 1);
 
-        putText(post_img, "Detected",
-                TopLeftLegend + Point(84, 26), FONT_HERSHEY_DUPLEX,
-                1, Scalar(0, 0, 0));
-        putText(post_img, "Desired",
-                TopLeftLegend + Point(84, 52), FONT_HERSHEY_DUPLEX,
-                1, Scalar(0, 0, 0));
-        //blue rect. Desired
-        rectangle(post_img, TopLeftLegend + Point(5, 12), TopLeftLegend + Point(80, 22),
-                  Scalar(255, 0, 0), FILLED);
-        //red rect. Detected
-        rectangle(post_img, TopLeftLegend + Point(5, 38), TopLeftLegend + Point(80, 48),
-                  Scalar(0, 0, 255), FILLED);
+        putText(post_img, "Detected", TopLeftLegend + Point(84, 26),
+                FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 0));
+        putText(post_img, "Desired", TopLeftLegend + Point(84, 52),
+                FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 0));
+        // blue rect. Desired
+        rectangle(post_img, TopLeftLegend + Point(5, 12),
+                  TopLeftLegend + Point(80, 22), Scalar(255, 0, 0), FILLED);
+        // red rect. Detected
+        rectangle(post_img, TopLeftLegend + Point(5, 38),
+                  TopLeftLegend + Point(80, 48), Scalar(0, 0, 255), FILLED);
         /**
          * @brief DRAW A LEGEND
          */
+        // #endregion
 
-
-        // if(JointsObserved != jointsCached){
-
-        // std::vector<double> dAngleSlice = std::vector<double>(desiredAngles_.end() - angles.size(), desiredAngles_.end());
+        jointsCached = JointsObserved;
+        std::vector<double> dAngleSlice = std::vector<double>(
+            desiredAngles_.end() - angles.size(), desiredAngles_.end());
         // std::vector<double> dAngleSlice = desiredAngles_;
-        int error = pieceWiseErrorWeighted(DesiredAngles, angles);
-        int pointError = positionWiseError(idealPoints, Joints);
-        std::cout << "\n\n---------------------------------------------------------\n\n";
 
-        // Controller Logic
-        // if e < 0: signFlag = -1
-        // else signFlag = 1
-        // then e = abs(e)
-        // Scenario 1. e < LowS -> Do Nothing
-        // Scenario 2. LowS < e < HighS -> Field + P*signFlag
-        // Scenario 3. e > HighS -> K += signFlag
-        int signFlag = (error < 0) ? -1 : 1;
-        std::cout << "Piecewise Error " << error << "\n";
-        std::cout << "Pointwise Error " << pointError << "\n";
+        if (firstRun) {
+            baseline_error = positionWiseError(idealPoints, Joints);
+            firstRun = false;
+        }
 
+        error = positionWiseError(idealPoints, Joints);
+        d_error = prev_error - error;
+        prev_error = error;
+        int Kd = derivativeAdjustment(abs(d_error),
+                                      error);  // send abs because we took care
+                                               // of signs a few lines above.
+        double Kp =
+            (double)error /
+            (double)baseline_error;  // a decimal of the error wrt the baseline
+        double KpPercent =
+            Kp * 100;  // a Percentage of the error wrt the baseline
+        std::cout << "\n-------------------------------------------------------"
+                     "--\n\n";
+
+        int signFlag = (d_error < 0) ? -1 : 1;
+        std::cout << "Baseline " << baseline_error;
+        std::cout << "\nError " << error << " d_error " << d_error;
+        std::cout << " -> Kd " << Kd << " ";
+        std::cout << "KpPercent " << KpPercent << "\n";
+        std::cout << "signFlag " << signFlag << "\n";
+        error = abs(error);
+        if (KpPercent < 21) {
+            finished = true;
+            continue;
+        } else if (KpPercent < 35) {
+            std::cout << "Adjusting by\n" << field << "\n";
+            std::cout <<  field * signFlag * Kd * Kp;
+            field += field * signFlag * Kd * Kp;
+        } else {
+            std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
+            EMultiplier += (signFlag * Kd);
+            std::cout << EMultiplier << "\n";
+            adjustStiffness(iLinks, EMultiplier);
+            field = CalculateField(iLinks, iJoints, iPosVec);
+            field = RotateField(field, reconciliationAngles);
+            field(1) = abs(field(0)) * -0.5;
+        }
+
+        std::cout << "E: " << EMultiplier << " applied field:\n"
+                  << field << "\n";
+        std::cout << "-------------------------------------------------------"
+                     "--\n\n";
         imshow("Post", post_img);
-        char c = (char)waitKey(5e2);
+        char c = (char)waitKey(0);
         if (c == 27)
             break;
     }

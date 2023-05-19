@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 
     std::vector<Vector3d> Magnetisations(jointNo);
     Magnetisations[0] = Vector3d(-0.0011, 0, -0.0028);
-    Magnetisations[1] = Vector3d(-0.0028, 0, 0.001);
+    Magnetisations[1] = Vector3d(-0.0028, 0, -0.001);
     Magnetisations[2] = Vector3d(0, 0, -0.003);
     Magnetisations[3] = Vector3d(-0.003, 0, 0);
     Magnetisations[4] = Vector3d(0, 0, -0.003);
