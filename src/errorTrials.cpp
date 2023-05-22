@@ -85,7 +85,7 @@ int main(int argc, char* argv[]){
         iJoints[i].q = Vector3d(0, DesiredAngles[i] * M_PI / 180, 0);
         iJoints[i].LocMag = Magnetisations[i];
     }
-    int EMultiplier = 1;
+    int EMultiplier = 20;
     // create vector of links for properties
     std::vector<Link> iLinks(jointEff);
     adjustStiffness(iLinks, EMultiplier);
@@ -220,7 +220,7 @@ int main(int argc, char* argv[]){
         } else if (KpPercent < 35) {
             std::cout << "Adjusting by\n" << field << "\n";
             std::cout <<  field * signFlag * Kd * Kp;
-            field += field * signFlag * Kd * Kp;
+            field *= 1.1 * signFlag;
         } else {
             std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
             EMultiplier += (signFlag * Kd);
