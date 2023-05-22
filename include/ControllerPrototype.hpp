@@ -151,6 +151,28 @@ inline int derivativeAdjustment(double d_error, int error){
     }
 }
 
+inline double derivativeAdjustmentF(double d_error){
+        double Kd;
+        switch (abs( (int) d_error)) {
+        case 0 ... 15:
+            Kd = 1.40;
+            break;
+
+        case 16 ... 40:
+            Kd = 1.20;
+            break;
+
+        case 41 ... 60:
+            Kd = 1.10;
+            break;
+
+        default:
+            Kd = 1;
+            break;
+    }
+    return Kd;
+}
+
 int main(int argc, char *argv[]);
 
 #endif

@@ -259,23 +259,18 @@ int main(int argc, char *argv[]) {
         error = positionWiseError(idealPoints, Joints);
         d_error = prev_error - error;
         prev_error = error;
-        int Kd = derivativeAdjustment(abs(d_error),
-                                      error);  // send abs because we took care
-                                               // of signs a few lines above.
-        double Kp =
-            (double)error /
-            (double)baseline_error;  // a decimal of the error wrt the baseline
-        double KpPercent =
-            Kp * 100;  // a Percentage of the error wrt the baseline
+        double Kd = derivativeAdjustmentF((d_error));
+        double error_wrt_baseline = (double)error / (double)baseline_error;
+        double Kp = 1 - error_wrt_baseline; 
         std::cout << "\n-------------------------------------------------------"
                      "--\n\n";
 
-        int signFlag = (Kp > 100) ? -1 : 1;
-        std::cout << "Baseline " << baseline_error;
-        std::cout << "\nError " << error << " d_error " << d_error;
-        std::cout << " -> Kd " << Kd << " ";
-        std::cout << "KpPercent " << KpPercent << "\n";
-        std::cout << "signFlag " << signFlag << "\n";
+        int signflag = std::signbit(d_error);
+        signflag = (signflag == 0) ? 1 : -1;
+        std::cout << "signflag " << signflag << "\n";
+        std::cout << "calculated Kp " << Kp << "\n";
+        std::cout << "calculated Kd " << Kd << "\n";
+        std::cout << "---------------------\n";
         error = abs(error);
 
         if (finished) {
@@ -293,23 +288,23 @@ int main(int argc, char *argv[]) {
                 continue;
         }
 
-        if (KpPercent < 21) {
+        if (error_wrt_baseline < 21) {
             finished = true;
             continue;
-        } else if (KpPercent < 35) {
+        } else if (error_wrt_baseline < 35) {
             std::cout << "Adjusting field from\n" << field << "\n";
-            field += field * signFlag * Kd * Kp;
+            field += (Kp * error_wrt_baseline + Kd) * signflag * field;
             std::cout << "To\n" << field << "\n";
         } else {
             std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
-            EMultiplier += (signFlag * Kd);
+            EMultiplier += (signflag * Kd);
             std::cout << EMultiplier << "\n";
             adjustStiffness(iLinks, EMultiplier);
             field = CalculateField(iLinks, iJoints, iPosVec);
             field = RotateField(field, reconciliationAngles);
-            field(1) = abs(field(0)) * -0.5;
         }
 
+        field(1) = abs(field(0)) * -0.5;
         std::cout << "E: " << EMultiplier << " applied field:\n"
                   << field << "\n";
 
