@@ -262,15 +262,13 @@ int main(int argc, char *argv[]) {
         double Kd = derivativeAdjustmentF((d_error));
         double error_wrt_baseline = (double)error / (double)baseline_error;
         double Kp = 1 - error_wrt_baseline; 
-        std::cout << "\n-------------------------------------------------------"
-                     "--\n\n";
 
         int signflag = std::signbit(d_error);
         signflag = (signflag == 0) ? 1 : -1;
+        std::cout << "\n-------------------------------------------------------\n";
         std::cout << "signflag " << signflag << "\n";
         std::cout << "calculated Kp " << Kp << "\n";
-        std::cout << "calculated Kd " << Kd << "\n";
-        std::cout << "---------------------\n";
+        std::cout << "calculated Kd " << Kd << "\n";        
         error = abs(error);
 
         if (finished) {
