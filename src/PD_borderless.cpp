@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{0, 0, 00};
+    Vector3d reconciliationAngles = Vector3d{0, 0, 180};
     double EMultiplier = 15;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
@@ -73,6 +73,9 @@ int main(int argc, char *argv[]) {
     Vector3d field = CalculateField(iLinks, iJoints, iPosVec);
     field = RotateField(field, reconciliationAngles);
     field(1) = 0;
+    double bx = field(0);
+    double by = field(1);
+    double bz = field(2);
     std::cout << "Initial answer:\n" << field << "\n";
 
     /**************************************************************
@@ -152,6 +155,7 @@ int main(int argc, char *argv[]) {
     bool finished = false;
     int baseline_error;
     int zero_count;
+    int signflag;
     recordPerformance << step_count << "," << error << "," << d_error << ","
                       << EMultiplier << "," << field(0) << "," << field(1)
                       << "," << field(2) << "\n";
@@ -261,14 +265,20 @@ int main(int argc, char *argv[]) {
         prev_error = error;
         double Kd = derivativeAdjustmentF((d_error));
         double error_wrt_baseline = (double)error / (double)baseline_error;
-        double Kp = 1 - error_wrt_baseline; 
+        double Kp = error_wrt_baseline;
 
-        int signflag = std::signbit(d_error);
+        signflag = std::signbit(d_error);
+        if ( Kp > 1 ) signflag = !signflag;
         signflag = (signflag == 0) ? 1 : -1;
-        std::cout << "\n-------------------------------------------------------\n";
-        std::cout << "signflag " << signflag << "\n";
-        std::cout << "calculated Kp " << Kp << "\n";
-        std::cout << "calculated Kd " << Kd << "\n";        
+
+        // std::cout
+        //     << "\n-------------------------------------------------------\n";
+        // std::cout << "Error " << error << "\n";
+        // std::cout << "d_error " << d_error << "\n";
+        // std::cout << "error_wrt_baseline " << error_wrt_baseline << "\n";
+        // std::cout << "signflag " << signflag << "\n";
+        // std::cout << "calculated Kp " << Kp << "\n";
+        // std::cout << "calculated Kd " << Kd << "\n";
         error = abs(error);
 
         if (finished) {
@@ -286,12 +296,12 @@ int main(int argc, char *argv[]) {
                 continue;
         }
 
-        if (error_wrt_baseline < 21) {
+        if (error_wrt_baseline < 0.21) {
             finished = true;
             continue;
-        } else if (error_wrt_baseline < 35) {
+        } else if (error_wrt_baseline < 0.35) {
             std::cout << "Adjusting field from\n" << field << "\n";
-            field += (Kp * error_wrt_baseline + Kd) * signflag * field;
+            field += (Kp * error_wrt_baseline * Kd) * signflag * field;
             std::cout << "To\n" << field << "\n";
         } else {
             std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
@@ -303,6 +313,9 @@ int main(int argc, char *argv[]) {
         }
 
         field(1) = abs(field(0)) * -0.5;
+        bx = field(0);
+        by = field(1);
+        bz = field(2);
         std::cout << "E: " << EMultiplier << " applied field:\n"
                   << field << "\n";
 
