@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{0, 0, 180};
+    Vector3d reconciliationAngles = Vector3d{0, 90, 180};
     double EMultiplier = 15;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
@@ -267,13 +267,13 @@ int main(int argc, char *argv[]) {
         double error_wrt_baseline = (double)error / (double)baseline_error;
         double Kp = error_wrt_baseline;
 
-        // signflag = std::signbit(d_error);
+        signflag = std::signbit(d_error);
         // if ( Kp > 1 ) signflag = !signflag;
-        // signflag = (signflag == 0) ? 1 : -1;
+        signflag = (signflag == 0) ? 1 : -1;
         // int d_error_sign = std::signbit(d_error);
         // int Kp_tooLarge = Kp > 1 ? 1 : 0;
         // signflag = (d_error_sign && Kp_tooLarge) ? 1 : -1;
-        signflag = 1;
+        // signflag = 1;
 
         // std::cout
         //     << "\n-------------------------------------------------------\n";
@@ -309,7 +309,7 @@ int main(int argc, char *argv[]) {
             std::cout << "To\n" << field << "\n";
         } else {
             std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
-            EMultiplier += (signflag * Kd);
+            EMultiplier += (signflag * Kd * 10 / 5);
             std::cout << EMultiplier << "\n";
             adjustStiffness(iLinks, EMultiplier);
             field = CalculateField(iLinks, iJoints, iPosVec);
