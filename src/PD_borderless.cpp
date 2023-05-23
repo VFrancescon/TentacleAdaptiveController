@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     // timesteps are equal to joint no
     int timesteps = jointEff;
     Vector3d reconciliationAngles = Vector3d{0, 90, 180};
-    double EMultiplier = 15;
+    double EMultiplier = 5;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
      * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -39,13 +39,16 @@ int main(int argc, char *argv[]) {
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
     } else {
-        DesiredAngles[0] = 45;
-        DesiredAngles[1] = 0;
-        DesiredAngles[2] = 0;
+        DesiredAngles[0] = -20;
+        DesiredAngles[1] = -10;
+        DesiredAngles[2] = -10;
         DesiredAngles[3] = 0;
         DesiredAngles[4] = 0;
         DesiredAngles[jointEff] = 0;
     }
+    bool rightHandBend = true;
+    rightHandBend = !std::signbit( avgVect(DesiredAngles));
+
 
     std::vector<Vector3d> Magnetisations(jointNo);
     Magnetisations[0] = Vector3d(-0.0011, 0, -0.0028);
@@ -162,6 +165,9 @@ int main(int argc, char *argv[]) {
     std::cout << "Ready to go. Press enter";
     std::cin.get();
 
+    double success_val = 0.2;
+    double low_val = 0.35;
+    
     while (camera.IsGrabbing()) {
         camera.RetrieveResult(5000, ptrGrabResult,
                               Pylon::TimeoutHandling_ThrowException);
@@ -268,6 +274,7 @@ int main(int argc, char *argv[]) {
         double Kp = error_wrt_baseline;
 
         signflag = std::signbit(d_error);
+        if(!rightHandBend) signflag = !signflag;
         // if ( Kp > 1 ) signflag = !signflag;
         signflag = (signflag == 0) ? 1 : -1;
         // int d_error_sign = std::signbit(d_error);
@@ -299,17 +306,18 @@ int main(int argc, char *argv[]) {
             else
                 continue;
         }
-
-        if (error_wrt_baseline < 0.21) {
+        bool success_th = error_wrt_baseline < success_val;
+        bool low_th = error_wrt_baseline < low_val;  
+        if (success_th) {
             finished = true;
             continue;
-        } else if (error_wrt_baseline < 0.35) {
+        } else if (low_th) {
             std::cout << "Adjusting field from\n" << field << "\n";
-            field += (Kp * error_wrt_baseline * Kd) * signflag * field;
+            field += (Kp * Kd) * signflag * field;
             std::cout << "To\n" << field << "\n";
         } else {
             std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
-            EMultiplier += (signflag * Kd * 10 / 5);
+            EMultiplier += (signflag * Kd * 10 / 2);
             std::cout << EMultiplier << "\n";
             adjustStiffness(iLinks, EMultiplier);
             field = CalculateField(iLinks, iJoints, iPosVec);
