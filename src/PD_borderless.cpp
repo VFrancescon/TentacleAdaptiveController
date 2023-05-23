@@ -47,8 +47,8 @@ int main(int argc, char *argv[]) {
         DesiredAngles[jointEff] = 0;
     }
     bool rightHandBend = true;
-    rightHandBend = !std::signbit( avgVect(DesiredAngles)); // true if right handed
-
+    rightHandBend =
+        !std::signbit(avgVect(DesiredAngles));  // true if right handed
 
     std::vector<Vector3d> Magnetisations(jointNo);
     Magnetisations[0] = Vector3d(-0.0011, 0, -0.0028);
@@ -306,7 +306,7 @@ int main(int argc, char *argv[]) {
                 continue;
         }
         bool success_th = error_wrt_baseline < success_val;
-        bool low_th = error_wrt_baseline < low_val;  
+        bool low_th = error_wrt_baseline < low_val;
         if (success_th) {
             finished = true;
             continue;
