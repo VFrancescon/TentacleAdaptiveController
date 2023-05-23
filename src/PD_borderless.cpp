@@ -267,9 +267,13 @@ int main(int argc, char *argv[]) {
         double error_wrt_baseline = (double)error / (double)baseline_error;
         double Kp = error_wrt_baseline;
 
-        signflag = std::signbit(d_error);
-        if ( Kp > 1 ) signflag = !signflag;
-        signflag = (signflag == 0) ? 1 : -1;
+        // signflag = std::signbit(d_error);
+        // if ( Kp > 1 ) signflag = !signflag;
+        // signflag = (signflag == 0) ? 1 : -1;
+        // int d_error_sign = std::signbit(d_error);
+        // int Kp_tooLarge = Kp > 1 ? 1 : 0;
+        // signflag = (d_error_sign && Kp_tooLarge) ? 1 : -1;
+        signflag = 1;
 
         // std::cout
         //     << "\n-------------------------------------------------------\n";

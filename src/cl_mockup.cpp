@@ -72,11 +72,11 @@ int main(int argc, char** argv) {
     if(Kp == 0) Kp = 1;
 
     Vector3d newField =
-        field + (Kp * error_wrt_baseline + Kd) * signflag * field;
+        field + (Kp * error_wrt_baseline * Kd) * signflag * field;
 
     std::cout << "Final op: (" << Kp << " * " << error_wrt_baseline << " + "
               << Kd << ") * " << signflag << " = "
-              << (Kp * error_wrt_baseline + Kd) * signflag << "\n";
+              << (Kp * error_wrt_baseline * Kd) * signflag << "\n";
     std::cout << "Field transitions from: \n";
     std::cout << "x: " << field(0) << "-> " << newField(0) << "\n";
     std::cout << "y: " << field(1) << "-> " << newField(1) << "\n";
