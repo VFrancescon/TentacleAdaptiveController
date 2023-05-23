@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
         DesiredAngles[jointEff] = 0;
     }
     bool rightHandBend = true;
-    rightHandBend = !std::signbit( avgVect(DesiredAngles));
+    rightHandBend = !std::signbit( avgVect(DesiredAngles)); // true if right handed
 
 
     std::vector<Vector3d> Magnetisations(jointNo);
@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
 
     double success_val = 0.2;
     double low_val = 0.35;
-    
+    int rightFlag = (rightFlag ? 1 : -1);
     while (camera.IsGrabbing()) {
         camera.RetrieveResult(5000, ptrGrabResult,
                               Pylon::TimeoutHandling_ThrowException);
@@ -274,7 +274,6 @@ int main(int argc, char *argv[]) {
         double Kp = error_wrt_baseline;
 
         signflag = std::signbit(d_error);
-        if(!rightHandBend) signflag = !signflag;
         // if ( Kp > 1 ) signflag = !signflag;
         signflag = (signflag == 0) ? 1 : -1;
         // int d_error_sign = std::signbit(d_error);
@@ -313,7 +312,7 @@ int main(int argc, char *argv[]) {
             continue;
         } else if (low_th) {
             std::cout << "Adjusting field from\n" << field << "\n";
-            field += (Kp * Kd) * signflag * field;
+            field += (Kp * Kd) * signflag * field * rightFlag;
             std::cout << "To\n" << field << "\n";
         } else {
             std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
