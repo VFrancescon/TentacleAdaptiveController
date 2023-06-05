@@ -20,6 +20,7 @@ int main(int argc, char *argv[]) {
 
     int jointEff = 5;
     int jointNo = jointEff + 1;
+    int jointMultiplier = 2;
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
@@ -39,11 +40,11 @@ int main(int argc, char *argv[]) {
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
     } else {
-        DesiredAngles[0] = -20;
-        DesiredAngles[1] = -10;
-        DesiredAngles[2] = -10;
-        DesiredAngles[3] = 0;
-        DesiredAngles[4] = 0;
+        DesiredAngles[0] = 20;
+        DesiredAngles[1] = 10;
+        DesiredAngles[2] = 10;
+        DesiredAngles[3] = 15;
+        DesiredAngles[4] = 15;
         DesiredAngles[jointEff] = 0;
     }
     bool rightHandBend = true;
@@ -58,21 +59,37 @@ int main(int argc, char *argv[]) {
     Magnetisations[4] = Vector3d(0, 0, -0.003);
     Magnetisations[jointEff] = Vector3d(0, 0, 0);
 
-    std::vector<PosOrientation> iPosVec(jointNo);
-    std::vector<Joint> iJoints(jointNo);
-    for (int i = 0; i < jointNo; i++) {
+    std::vector<double> DesiredAnglesSPLIT(jointEff*jointMultiplier);
+    std::vector<Vector3d> MagnetisationsSPLIT(jointEff*jointMultiplier);
+    if(jointMultiplier > 1){
+    //convert sub5 joint numbers
+        for(int i = 0; i < jointEff * jointMultiplier; i++) {
+            DesiredAnglesSPLIT[i] = DesiredAngles[i / jointMultiplier] / jointMultiplier;
+            MagnetisationsSPLIT[i] = Magnetisations[i / jointMultiplier];
+        }
+        DesiredAnglesSPLIT.push_back(0);
+        MagnetisationsSPLIT.push_back(Vector3d(0, 0, 0));
+    } else {
+        std::cout << "Using defaults\n";
+        DesiredAnglesSPLIT = DesiredAngles;
+        MagnetisationsSPLIT = Magnetisations;
+    }
+
+    std::vector<PosOrientation> iPosVec(jointEff * jointMultiplier + 1);
+    std::vector<Joint> iJoints(jointEff * jointMultiplier + 1);
+    for (int i = 0; i < iPosVec.size(); i++)
+    {
         iJoints[i].assignPosOri(iPosVec[i]);
     }
 
-    for (int i = 0; i < jointNo; i++) {
-        iJoints[i].q = Vector3d(0, DesiredAngles[i] * M_PI / 180, 0);
-        iJoints[i].LocMag = Magnetisations[i];
+    for (int i = 0; i < iJoints.size(); i++)
+    {
+        iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT[i] * M_PI / 180, 0);
+        iJoints[i].LocMag = MagnetisationsSPLIT[i];
     }
-
     // create vector of links for properties
-    std::vector<Link> iLinks(jointEff);
-    adjustStiffness(iLinks, EMultiplier);
-
+    std::vector<Link> iLinks(jointEff * jointMultiplier);
+    adjustStiffness(iLinks, EMultiplier, jointMultiplier);
     Vector3d field = CalculateField(iLinks, iJoints, iPosVec);
     field = RotateField(field, reconciliationAngles);
     field(1) = 0;
@@ -194,7 +211,7 @@ int main(int argc, char *argv[]) {
         std::vector<Point> Joints;
         std::vector<std::vector<Point>> contours;
 
-        Joints = findJoints(post_img_masked, contours);
+        Joints = findJoints(post_img_masked, contours, jointEff*jointMultiplier+1);
         int JointsObserved = Joints.size();
         for (auto i : Joints) {
             circle(post_img, i, 4, Scalar(255, 0, 0), FILLED);
@@ -202,12 +219,12 @@ int main(int argc, char *argv[]) {
         drawContours(post_img, contours, -1, Scalar(255, 255, 0));
         std::vector<double> angles;
         std::vector<double> desiredAngles_ =
-            std::vector<double>(DesiredAngles.begin(), DesiredAngles.end() - 1);
+            std::vector<double>(DesiredAnglesSPLIT.begin(), DesiredAnglesSPLIT.end() - 1);
         std::vector<Point> idealPoints;
         // if (p0 == Point{-2000, 2000})
         p0 = Joints[0];
 
-        idealPoints = computeIdealPoints(p0, DesiredAngles);
+        idealPoints = computeIdealPoints(p0, DesiredAnglesSPLIT);
         // std::cout << "Desired angles slice size: " << DesiredAngles.size() <<
         // "\n";
 
@@ -312,7 +329,7 @@ int main(int argc, char *argv[]) {
             continue;
         } else if (low_th) {
             std::cout << "Adjusting field from\n" << field << "\n";
-            field += (Kp * Kd) * signflag * field * rightFlag;
+            field += ( (1-Kp) * Kd) * signflag * field;
             std::cout << "To\n" << field << "\n";
         } else {
             std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
