@@ -6,12 +6,13 @@ double lowError = 7e3;
 double smallAdjustment = 0.1f;
 int main(int argc, char *argv[])
 {
+    int jointMultiplier = 2;
     int jointEff = 5;
     int jointNo = jointEff + 1;
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{0,90,180};
+    Vector3d reconciliationAngles = Vector3d{180,-90,180};
     double EMulitplier = 20;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
@@ -20,7 +21,7 @@ int main(int argc, char *argv[])
      * * * * * * * * * * * * * * * * * * * * * * * * */
     std::vector<Vector3d> AppliedFields;
 
-        std::vector<double> DesiredAngles(jointNo);
+    std::vector<double> DesiredAngles(jointNo);
     if (argc == 6)
     {
         DesiredAngles[0] = std::stod(argv[1]);
@@ -31,15 +32,15 @@ int main(int argc, char *argv[])
         DesiredAngles[jointEff] = 0;
     } else {
         DesiredAngles[0] = 45;
-        DesiredAngles[1] = 0;
-        DesiredAngles[2] = 0;
-        DesiredAngles[3] = 0;
-        DesiredAngles[4] = 0;
+        DesiredAngles[1] = 20;
+        DesiredAngles[2] = 10;
+        DesiredAngles[3] = 30;
+        DesiredAngles[4] = 20;
         DesiredAngles[jointEff] = 0;
     }
 
     if( argc == 2 || argc == 7) {
-        EMulitplier = std::stod(argv[argc-1]);
+        jointMultiplier = std::stoi(argv[argc-1]);
     }
 
     std::vector<Vector3d> Magnetisations(jointNo);
@@ -50,6 +51,21 @@ int main(int argc, char *argv[])
     Magnetisations[4] = Vector3d(0, 0, -0.003);
     Magnetisations[jointEff] = Vector3d(0, 0, 0);
 
+    std::vector<double> DesiredAnglesSPLIT(jointEff*jointMultiplier);
+    std::vector<Vector3d> MagnetisationsSPLIT(jointEff*jointMultiplier);
+
+    if(jointMultiplier > 1){
+        //convert sub5 joint numbers
+        for(int i = 0; i < jointEff * jointMultiplier; i++) {
+            DesiredAnglesSPLIT[i] = DesiredAngles[i / jointMultiplier] / 2;
+            MagnetisationsSPLIT[i] = Magnetisations[i / jointMultiplier];
+        }
+        DesiredAnglesSPLIT.push_back(0);
+        MagnetisationsSPLIT.push_back(Vector3d(0, 0, 0));
+    } else {
+        DesiredAnglesSPLIT = DesiredAngles;
+        MagnetisationsSPLIT = Magnetisations;
+    }
     // Magnetisations[0] = Vector3d(0, 0, -0.003);
     // Magnetisations[1] = Vector3d(0, 0, -0.003);
     // Magnetisations[2] = Vector3d(0, 0, -0.003);
@@ -66,8 +82,8 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < jointNo; i++)
     {
-        iJoints[i].q = Vector3d(0, DesiredAngles[i] * M_PI / 180, 0);
-        iJoints[i].LocMag = Magnetisations[i];
+        iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT[i] * M_PI / 180, 0);
+        iJoints[i].LocMag = MagnetisationsSPLIT[i];
     }
 
     // create vector of links for properties
