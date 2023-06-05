@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
      * * * * * * * * * * * * * * * * * * * * * * * * */
     std::vector<Vector3d> AppliedFields;
 
-    std::vector<double> DesiredAngles(jointNo);
+        std::vector<double> DesiredAngles(jointNo);
     if (argc == 6)
     {
         DesiredAngles[0] = std::stod(argv[1]);
@@ -31,16 +31,15 @@ int main(int argc, char *argv[])
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
     } else {
-        DesiredAngles[0] = 45;
-        DesiredAngles[1] = 20;
-        DesiredAngles[2] = 10;
-        DesiredAngles[3] = 30;
+        DesiredAngles[0] = 10;
+        DesiredAngles[1] = 15;
+        DesiredAngles[2] = 15;
+        DesiredAngles[3] = 10;
         DesiredAngles[4] = 20;
         DesiredAngles[jointEff] = 0;
     }
 
     if( argc == 2 || argc == 7) {
-        std::cout << "Setting joint multiplier to " << argv[argc-1] << std::endl;
         jointMultiplier = std::stoi(argv[argc-1]);
     }
 
@@ -52,11 +51,16 @@ int main(int argc, char *argv[])
     Magnetisations[4] = Vector3d(0, 0, -0.003);
     Magnetisations[jointEff] = Vector3d(0, 0, 0);
 
+    // Magnetisations[0] = Vector3d(0, 0, -0.003);
+    // Magnetisations[1] = Vector3d(0, 0, -0.003);
+    // Magnetisations[2] = Vector3d(0, 0, -0.003);
+    // Magnetisations[3] = Vector3d(0, 0, -0.003);
+    // Magnetisations[4] = Vector3d(0, 0, -0.003);
+    // Magnetisations[jointEff] = Vector3d(0, 0, 0);
     std::vector<double> DesiredAnglesSPLIT(jointEff*jointMultiplier);
     std::vector<Vector3d> MagnetisationsSPLIT(jointEff*jointMultiplier);
-
     if(jointMultiplier > 1){
-        //convert sub5 joint numbers
+    //convert sub5 joint numbers
         for(int i = 0; i < jointEff * jointMultiplier; i++) {
             DesiredAnglesSPLIT[i] = DesiredAngles[i / jointMultiplier] / jointMultiplier;
             MagnetisationsSPLIT[i] = Magnetisations[i / jointMultiplier];
@@ -68,12 +72,6 @@ int main(int argc, char *argv[])
         DesiredAnglesSPLIT = DesiredAngles;
         MagnetisationsSPLIT = Magnetisations;
     }
-    // Magnetisations[0] = Vector3d(0, 0, -0.003);
-    // Magnetisations[1] = Vector3d(0, 0, -0.003);
-    // Magnetisations[2] = Vector3d(0, 0, -0.003);
-    // Magnetisations[3] = Vector3d(0, 0, -0.003);
-    // Magnetisations[4] = Vector3d(0, 0, -0.003);
-    // Magnetisations[jointEff] = Vector3d(0, 0, 0);
 
     std::vector<PosOrientation> iPosVec(jointNo);
     std::vector<Joint> iJoints(jointNo);
@@ -84,13 +82,13 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < jointNo; i++)
     {
-        iJoints[i].q = Vector3d(0, DesiredAngles[i] * M_PI / 180, 0);
-        iJoints[i].LocMag = Magnetisations[i];
+        iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT[i] * M_PI / 180, 0);
+        iJoints[i].LocMag = MagnetisationsSPLIT[i];
     }
 
     // create vector of links for properties
     std::vector<Link> iLinks(jointEff);
-    adjustStiffness(iLinks, EMulitplier);
+    adjustStiffness(iLinks, EMulitplier, jointMultiplier);
 
     Vector3d field = CalculateField(iLinks, iJoints, iPosVec);
     field = RotateField(field, reconciliationAngles);
