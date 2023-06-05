@@ -6,13 +6,13 @@ double lowError = 7e3;
 double smallAdjustment = 0.1f;
 int main(int argc, char *argv[])
 {
-    int jointMultiplier = 2;
+    int jointMultiplier = 1;
     int jointEff = 5;
     int jointNo = jointEff + 1;
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{180,-90,180};
+    Vector3d reconciliationAngles = Vector3d{0,0,0};
     double EMulitplier = 20;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
     }
 
     if( argc == 2 || argc == 7) {
+        std::cout << "Setting joint multiplier to " << argv[argc-1] << std::endl;
         jointMultiplier = std::stoi(argv[argc-1]);
     }
 
@@ -57,12 +58,13 @@ int main(int argc, char *argv[])
     if(jointMultiplier > 1){
         //convert sub5 joint numbers
         for(int i = 0; i < jointEff * jointMultiplier; i++) {
-            DesiredAnglesSPLIT[i] = DesiredAngles[i / jointMultiplier] / 2;
+            DesiredAnglesSPLIT[i] = DesiredAngles[i / jointMultiplier] / jointMultiplier;
             MagnetisationsSPLIT[i] = Magnetisations[i / jointMultiplier];
         }
         DesiredAnglesSPLIT.push_back(0);
         MagnetisationsSPLIT.push_back(Vector3d(0, 0, 0));
     } else {
+        std::cout << "Using defaults\n";
         DesiredAnglesSPLIT = DesiredAngles;
         MagnetisationsSPLIT = Magnetisations;
     }
@@ -82,8 +84,8 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < jointNo; i++)
     {
-        iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT[i] * M_PI / 180, 0);
-        iJoints[i].LocMag = MagnetisationsSPLIT[i];
+        iJoints[i].q = Vector3d(0, DesiredAngles[i] * M_PI / 180, 0);
+        iJoints[i].LocMag = Magnetisations[i];
     }
 
     // create vector of links for properties

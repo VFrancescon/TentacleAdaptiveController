@@ -273,6 +273,20 @@ void adjustStiffness(std::vector<Link> &iLinks, double EMulitplier)
     }
 }
 
+void adjustStiffness(std::vector<Link> &iLinks, double EMulitplier, int LengthMultiplier)
+{
+    dfltValues MechPpts;
+
+    for (int i = 0; i < iLinks.size(); i++)
+    {
+        iLinks[i].dL = MechPpts.len / LengthMultiplier;
+        iLinks[i].d = MechPpts.d;
+        iLinks[i].E = MechPpts.E * EMulitplier;
+        iLinks[i].v = MechPpts.v;
+    }
+}
+
+
 Vector3d CalculateField(std::vector<Link> &iLinks, std::vector<Joint> &iJoints,
                         std::vector<PosOrientation> &iPosVec)
 {

@@ -130,6 +130,15 @@ Vector3d RotateField(Vector3d field, Vector3d rotationAngles);
 void adjustStiffness(std::vector<Link> &iLinks, double EMulitplier);
 
 /**
+ * @brief Adjusts stiffness Matrix by changing the multiplier applied to the Young's Modulus
+ *
+ * @param iLinks Vector containing all the link data
+ * @param EMulitplier multiplier applied to the Young's Modulus
+ * @param LengthMultiplier multiplier applied to the length of the links. Divides by this value.
+ */
+void adjustStiffness(std::vector<Link> &iLinks, double EMulitplier, int LengthMultiplier);
+
+/**
  * @brief Calculates Field B required to satisfy Q = K^-1.J^T.S.B
  *
  * @param iLinks Vector containing link-related data (stiffness)
