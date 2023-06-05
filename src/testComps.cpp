@@ -1,4 +1,5 @@
 #include "ControllerPrototype.hpp"
+#include <Eigen/Geometry> 
 
 double upperError = 10e3;
 double lowError = 7e3;
@@ -49,6 +50,13 @@ int main(int argc, char *argv[])
     Magnetisations[4] = Vector3d(0, 0, -0.003);
     Magnetisations[jointEff] = Vector3d(0, 0, 0);
 
+    // Magnetisations[0] = Vector3d(0, 0, -0.003);
+    // Magnetisations[1] = Vector3d(0, 0, -0.003);
+    // Magnetisations[2] = Vector3d(0, 0, -0.003);
+    // Magnetisations[3] = Vector3d(0, 0, -0.003);
+    // Magnetisations[4] = Vector3d(0, 0, -0.003);
+    // Magnetisations[jointEff] = Vector3d(0, 0, 0);
+
     std::vector<PosOrientation> iPosVec(jointNo);
     std::vector<Joint> iJoints(jointNo);
     for (int i = 0; i < jointNo; i++)
@@ -70,7 +78,6 @@ int main(int argc, char *argv[])
     field = RotateField(field, reconciliationAngles);
     field(1) = 0;
     std::cout << "Initial answer:\n" << field << "\n";
-
 
 return 0;
 }

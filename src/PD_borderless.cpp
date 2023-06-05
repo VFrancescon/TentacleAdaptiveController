@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{0, 90, 180};
+    Vector3d reconciliationAngles = Vector3d{0, 0, 180};
     double EMultiplier = 5;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
