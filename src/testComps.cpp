@@ -73,21 +73,21 @@ int main(int argc, char *argv[])
         MagnetisationsSPLIT = Magnetisations;
     }
 
-    std::vector<PosOrientation> iPosVec(jointNo);
-    std::vector<Joint> iJoints(jointNo);
-    for (int i = 0; i < jointNo; i++)
+    std::vector<PosOrientation> iPosVec(jointEff * jointMultiplier + 1);
+    std::vector<Joint> iJoints(jointEff * jointMultiplier + 1);
+    for (int i = 0; i < iPosVec.size(); i++)
     {
         iJoints[i].assignPosOri(iPosVec[i]);
     }
 
-    for (int i = 0; i < jointNo; i++)
+    for (int i = 0; i < iJoints.size(); i++)
     {
         iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT[i] * M_PI / 180, 0);
         iJoints[i].LocMag = MagnetisationsSPLIT[i];
     }
 
     // create vector of links for properties
-    std::vector<Link> iLinks(jointEff);
+    std::vector<Link> iLinks(jointEff * jointMultiplier);
     adjustStiffness(iLinks, EMulitplier, jointMultiplier);
 
     Vector3d field = CalculateField(iLinks, iJoints, iPosVec);

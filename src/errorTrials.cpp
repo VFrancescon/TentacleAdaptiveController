@@ -6,6 +6,7 @@ double lowError = 7e3;
 int main(int argc, char* argv[]){
     int jointEff = 5;
     int jointNo = jointEff + 1;
+    int jointMultiplier = 2;
     std::vector<double> DesiredAngles(jointNo);
     if (argc == 6)
     {
@@ -16,11 +17,11 @@ int main(int argc, char* argv[]){
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
     } else {
-        DesiredAngles[0] = 45;
-        DesiredAngles[1] = 0;
-        DesiredAngles[2] = 0;
-        DesiredAngles[3] = 0;
-        DesiredAngles[4] = 0;
+        DesiredAngles[0] = 10;
+        DesiredAngles[1] = 10;
+        DesiredAngles[2] = 15;
+        DesiredAngles[3] = 20;
+        DesiredAngles[4] = 15;
         DesiredAngles[jointEff] = 0;
     }
     /**************************************************************
@@ -75,12 +76,7 @@ int main(int argc, char* argv[]){
     Magnetisations[4] = Vector3d(0, 0, -0.003);
     Magnetisations[jointEff] = Vector3d(0, 0, 0);
 
-    std::vector<PosOrientation> iPosVec(jointNo);
-    std::vector<Joint> iJoints(jointNo);
-    for (int i = 0; i < jointNo; i++) {
-        iJoints[i].assignPosOri(iPosVec[i]);
-    }
-    int jointMultiplier = 1;
+
     std::vector<double> DesiredAnglesSPLIT(jointEff*jointMultiplier);
     std::vector<Vector3d> MagnetisationsSPLIT(jointEff*jointMultiplier);
     if(jointMultiplier > 1){
@@ -96,14 +92,23 @@ int main(int argc, char* argv[]){
         DesiredAnglesSPLIT = DesiredAngles;
         MagnetisationsSPLIT = Magnetisations;
     }
-    for (int i = 0; i < jointNo; i++) {
+
+    std::vector<PosOrientation> iPosVec(jointEff * jointMultiplier + 1);
+    std::vector<Joint> iJoints(jointEff * jointMultiplier + 1);
+    for (int i = 0; i < iPosVec.size(); i++)
+    {
+        iJoints[i].assignPosOri(iPosVec[i]);
+    }
+
+    for (int i = 0; i < iJoints.size(); i++)
+    {
         iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT[i] * M_PI / 180, 0);
         iJoints[i].LocMag = MagnetisationsSPLIT[i];
     }
     int EMultiplier = 20;
     // create vector of links for properties
-    std::vector<Link> iLinks(jointEff);
-    adjustStiffness(iLinks, EMultiplier);
+    std::vector<Link> iLinks(jointEff * jointMultiplier);
+    adjustStiffness(iLinks, EMultiplier, jointMultiplier);
     Vector3d reconciliationAngles = Vector3d{0, 0, 180};
     Vector3d field = CalculateField(iLinks, iJoints, iPosVec);
     field = RotateField(field, reconciliationAngles);
@@ -136,7 +141,7 @@ int main(int argc, char* argv[]){
         std::vector<Point> Joints;
         std::vector<std::vector<Point>> contours;
 
-        Joints = findJoints(post_img_masked, contours, jointNo);
+        Joints = findJoints(post_img_masked, contours, jointEff*jointMultiplier+1);
         int JointsObserved = Joints.size();
         for (auto i : Joints) {
             circle(post_img, i, 4, Scalar(255, 0, 0), FILLED);
