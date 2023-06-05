@@ -3,7 +3,6 @@
 int threshold_low = 200;
 int threshold_high = 255;
 int link_lenght = 65;
-int JointNumber = 6;
 
 int PYLON_WIDTH = 1920;
 int PYLON_HEIGHT = 1200;
@@ -106,7 +105,7 @@ std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngle
     return ideal;
 }
 
-std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point>> &contours)
+std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point>> &contours, int JointNumber)
 {
     // std::cout << "---------------\n\nExtafuncs version\n";
     Mat contours_bin;

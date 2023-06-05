@@ -67,14 +67,16 @@ std::vector<double> computeAngles(std::vector<Point> Joints);
  */
 std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngles_);
 
+
 /**
+ 
  * @brief Finds ordered list of joints from a given masked image. Uses Zhang Suen thinning.
  *
  * @param post_img_masked Source image, containing isolated catheter only.
  * @param contours reference to contorus vector, sent for debugging.
  * @return std::vector<Point> Set of points containing all the detected joint angles. Size n.
  */
-std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point>> &contours);
+std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point>> &contours, int JointNumber=6);
 
 /**
  * @brief Averages an std::vector.

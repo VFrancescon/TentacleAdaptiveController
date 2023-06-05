@@ -80,10 +80,25 @@ int main(int argc, char* argv[]){
     for (int i = 0; i < jointNo; i++) {
         iJoints[i].assignPosOri(iPosVec[i]);
     }
-
+    int jointMultiplier = 1;
+    std::vector<double> DesiredAnglesSPLIT(jointEff*jointMultiplier);
+    std::vector<Vector3d> MagnetisationsSPLIT(jointEff*jointMultiplier);
+    if(jointMultiplier > 1){
+    //convert sub5 joint numbers
+        for(int i = 0; i < jointEff * jointMultiplier; i++) {
+            DesiredAnglesSPLIT[i] = DesiredAngles[i / jointMultiplier] / jointMultiplier;
+            MagnetisationsSPLIT[i] = Magnetisations[i / jointMultiplier];
+        }
+        DesiredAnglesSPLIT.push_back(0);
+        MagnetisationsSPLIT.push_back(Vector3d(0, 0, 0));
+    } else {
+        std::cout << "Using defaults\n";
+        DesiredAnglesSPLIT = DesiredAngles;
+        MagnetisationsSPLIT = Magnetisations;
+    }
     for (int i = 0; i < jointNo; i++) {
-        iJoints[i].q = Vector3d(0, DesiredAngles[i] * M_PI / 180, 0);
-        iJoints[i].LocMag = Magnetisations[i];
+        iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT[i] * M_PI / 180, 0);
+        iJoints[i].LocMag = MagnetisationsSPLIT[i];
     }
     int EMultiplier = 20;
     // create vector of links for properties
@@ -121,7 +136,7 @@ int main(int argc, char* argv[]){
         std::vector<Point> Joints;
         std::vector<std::vector<Point>> contours;
 
-        Joints = findJoints(post_img_masked, contours);
+        Joints = findJoints(post_img_masked, contours, jointNo);
         int JointsObserved = Joints.size();
         for (auto i : Joints) {
             circle(post_img, i, 4, Scalar(255, 0, 0), FILLED);
@@ -129,12 +144,12 @@ int main(int argc, char* argv[]){
         drawContours(post_img, contours, -1, Scalar(255, 255, 0));
         std::vector<double> angles;
         std::vector<double> desiredAngles_ =
-            std::vector<double>(DesiredAngles.begin(), DesiredAngles.end() - 1);
+            std::vector<double>(DesiredAnglesSPLIT.begin(), DesiredAnglesSPLIT.end() - 1);
         std::vector<Point> idealPoints;
         // if (p0 == Point{-2000, 2000})
         p0 = Joints[0];
 
-        idealPoints = computeIdealPoints(p0, DesiredAngles);
+        idealPoints = computeIdealPoints(p0, DesiredAnglesSPLIT);
         // std::cout << "Desired angles slice size: " << DesiredAngles.size() <<
         // "\n";
 
