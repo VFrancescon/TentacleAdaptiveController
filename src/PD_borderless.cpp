@@ -1,6 +1,7 @@
 #include "ControllerPrototype.hpp"
 #include "HCoilMiddlewareLib/HCoilMiddlewareLib.hpp"
 
+
 int main(int argc, char *argv[]) {
     /**
      * Get today's date
@@ -167,16 +168,16 @@ int main(int argc, char *argv[]) {
     // intr_mask = IntroducerMask(pre_img1);
     intr_mask = IntroducerMask(pre_img);
     int jointsCached = 0;
-    int error = 0, prev_error = 0;
-    int d_error = 0;
+    int error = 0, prev_xerror = 0, prev_yerror = 0;
+    int dx_error = 0, dy_error = 0;
     int step_count = 0;
     Point p0 = Point{-2000, 2000};
     bool firstRun = true;
     bool finished = false;
     int baseline_error;
     int zero_count;
-    int signflag;
-    recordPerformance << step_count << "," << error << "," << d_error << ","
+    int signFlag;
+    recordPerformance << step_count << "," << error << "," << dx_error << ","
                       << EMultiplier << "," << field(0) << "," << field(1)
                       << "," << field(2) << "\n";
     std::cout << "Ready to go. Press enter";
@@ -278,39 +279,41 @@ int main(int argc, char *argv[]) {
             desiredAngles_.end() - angles.size(), desiredAngles_.end());
         // std::vector<double> dAngleSlice = desiredAngles_;
 
-        if (firstRun) {
-            baseline_error = positionWiseError(idealPoints, Joints);
+        std::vector<double> desiredX, observedX, desiredY, observedY;
+        for(auto i: idealPoints){
+            desiredX.push_back(i.x);
+            desiredY.push_back(i.y);
+        }
+        for(auto i: Joints){
+            observedX.push_back(i.x);
+            observedY.push_back(i.y);
+        }
+        double xError = xwiseError(desiredX, observedX);
+        double yError = ywiseError(desiredY, observedY);
+        dx_error = xError - prev_xerror;
+        dy_error = yError - prev_yerror;
+        prev_xerror = xError;
+        prev_yerror = yError;
+
+        if(firstRun){
+            baseline_error = (xError + yError) / 2;
             firstRun = false;
         }
+        double baselineX = ((xError + yError) / 2) / baseline_error;
+        int xFlag = std::signbit(xError) ? 1 : -1;
+        int yFlag = std::signbit(yError) ? -1 : 1;
+        int signFlag;
+        if( xFlag == -1 && yFlag == 1){
+            signFlag = -1;
+        } else signFlag = xFlag;
 
-        error = positionWiseError(idealPoints, Joints);
-        d_error = prev_error - error;
-        prev_error = error;
-        double Kd = derivativeAdjustmentF((d_error));
-        double error_wrt_baseline = (double)error / (double)baseline_error;
-        double Kp = error_wrt_baseline;
+        double Kp = 1;
+        double Kd = derivativeAdjustmentF(dx_error);
 
-        signflag = std::signbit(d_error);
-        // if ( Kp > 1 ) signflag = !signflag;
-        signflag = (signflag == 0) ? 1 : -1;
-        // int d_error_sign = std::signbit(d_error);
-        // int Kp_tooLarge = Kp > 1 ? 1 : 0;
-        // signflag = (d_error_sign && Kp_tooLarge) ? 1 : -1;
-        // signflag = 1;
-
-        // std::cout
-        //     << "\n-------------------------------------------------------\n";
-        // std::cout << "Error " << error << "\n";
-        // std::cout << "d_error " << d_error << "\n";
-        // std::cout << "error_wrt_baseline " << error_wrt_baseline << "\n";
-        // std::cout << "signflag " << signflag << "\n";
-        // std::cout << "calculated Kp " << Kp << "\n";
-        // std::cout << "calculated Kd " << Kd << "\n";
-        error = abs(error);
 
         if (finished) {
             std::cout << "Victory\n";
-            recordPerformance << step_count << "," << error << "," << d_error
+            recordPerformance << step_count << "," << error << "," << dx_error
                               << "," << EMultiplier << "," << field(0) << ","
                               << field(1) << "," << field(2) << "\n";
             std::cout << "End of operations\n";
@@ -322,18 +325,16 @@ int main(int argc, char *argv[]) {
             else
                 continue;
         }
-        bool success_th = error_wrt_baseline < success_val;
-        bool low_th = error_wrt_baseline < low_val;
-        if (success_th) {
+        if (baselineX < 0.25) { 
             finished = true;
             continue;
-        } else if (low_th) {
+        } else if ( baseline_error > 0.25 && baseline_error < 0.5 ) { 
             std::cout << "Adjusting field from\n" << field << "\n";
-            field += ( (1-Kp) * Kd) * signflag * field;
+            field += ( Kp * Kd) * signFlag * field;
             std::cout << "To\n" << field << "\n";
-        } else {
+        } else { 
             std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
-            EMultiplier += (signflag * Kd * 10 / 2);
+            EMultiplier += (signFlag * Kd * 10 / 2);
             std::cout << EMultiplier << "\n";
             adjustStiffness(iLinks, EMultiplier);
             field = CalculateField(iLinks, iJoints, iPosVec);
@@ -356,7 +357,7 @@ int main(int argc, char *argv[]) {
 
         mid.set3DField(field);
         step_count++;
-        recordPerformance << step_count << "," << error << "," << d_error << ","
+        recordPerformance << step_count << "," << error << "," << dx_error << ","
                           << EMultiplier << "," << field(0) << "," << field(1)
                           << "," << field(2) << "\n";
 

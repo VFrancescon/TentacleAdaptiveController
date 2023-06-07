@@ -33,91 +33,27 @@ inline int meanError(std::vector<double> &desired, std::vector<double> &observed
     return (int)(d_error );
 }
 
-inline int pieceWiseError(std::vector<double> desired, std::vector<double> observed){
-    double avg;
-    int error;
-    // desired.pop_back();
-    std::vector<double> diff(desired.size());
-    if(desired.size() == observed.size()){
-        for(int i = 0; i < desired.size(); i++){
-            diff[i] = desired[i] - observed[i];
-        }
-        avg = avgVect(diff);
-        // std::cout << "pieceWise precasting: " << avg << "\n";
-        return (int) avg;
-    } else {
-        std::cout << "piecwise. No matching sizes\n";
-        std::cout << "Size of desired angles: " << desired.size() << "\nSize of observed angles: " << observed.size() << "\n";
-        return 0;}
-}
-
-inline int pieceWiseErrorWeighted(std::vector<double> desired, std::vector<double> observed){
-    double avg;
-    int error;
-    // desired.pop_back();
-    std::vector<double> diff(desired.size());
-    if(desired.size() == observed.size()){
-        for(int i = 0; i < desired.size(); i++){
-            diff[i] = desired[i] - observed[i];
-            diff[i] *= (i+1);
-        }
-        avg = avgVect(diff);
-        // std::cout << "pieceWiseWeighted precasting: " << avg << "\n";
-        return (int) avg;
-    } else {
-        std::cout << "weighted. No matching sizes\n";
-        std::cout << "Size of desired angles: " << desired.size() << "\nSize of observed angles: " << observed.size() << "\n";
-        return 0;}
-}
-
-inline int positionWiseError(std::vector<Point> idealPoints, std::vector<Point> observedPoints){
-    double avg;
-    int error;
-    std::vector<double> scaledValues;
-    for(int i = 0; i < idealPoints.size(); i++){
-        int ithxDiff = observedPoints[i].x - idealPoints[i].x;
-        int ithyDiff = observedPoints[i].y - idealPoints[i].y;
-        double ithDistance = std::sqrt(ithxDiff*ithxDiff + ithyDiff*ithyDiff);
-        // std::cout << "i : " << i << " distance " << ithDistance << "\n";
-        scaledValues.push_back(ithDistance*i+1);
+inline double xwiseError(std::vector<double> observedX, std::vector<double> desiredX)
+{
+    double sum = 0;
+    for (size_t i = 0; i < observedX.size(); i++)
+    {
+        sum += (desiredX[i] - observedX[i]) * (i+1);
     }
-    avg = avgVect(scaledValues);
-    error = (int) avg;
-    return error;
+    return sum / observedX.size();
 }
 
-inline int positionWiseError(std::vector<Point2d> idealPoints, std::vector<Point2d> observedPoints){
-    double avg;
-    double error;
-    std::vector<double> scaledValues;
-    for(int i = 0; i < idealPoints.size(); i++){
-        double ithxDiff = observedPoints[i].x - idealPoints[i].x;
-        double ithyDiff = observedPoints[i].y - idealPoints[i].y;
-        double ithDistance = std::sqrt(ithxDiff*ithxDiff + ithyDiff*ithyDiff);
-        // std::cout << "i : " << i << " distance " << ithDistance << "\n";
-        scaledValues.push_back(ithDistance*i+1);
+inline double ywiseError(std::vector<double> observedY, std::vector<double> desiredY)
+{
+    double sum = 0;
+    for (size_t i = 0; i < observedY.size(); i++)
+    {
+        sum += (desiredY[i] - observedY[i]) * (i+1);
     }
-    avg = avgVect(scaledValues);
-    error = avg;
-    return error;
+    return sum / observedY.size();
 }
 
-inline int positionWiseError(std::vector<Vector3d> idealPoints, std::vector<Vector3d> observedPoints){
-    double avg;
-    double error;
-    std::vector<double> scaledValues;
-    for(int i = 0; i < idealPoints.size(); i++){
-        double ithxDiff = observedPoints[i](0) - idealPoints[i](0);
-        double ithyDiff = observedPoints[i](2) - idealPoints[i](2);
-        double ithDistance = std::sqrt(ithxDiff*ithxDiff + ithyDiff*ithyDiff);
-        // std::cout << "i : " << i << " distance " << ithDistance << "\n";
-        if(i == idealPoints.size() - 1 ) scaledValues.push_back(ithDistance*i+2);
-        else scaledValues.push_back(ithDistance*i+1);
-    }
-    avg = avgVect(scaledValues);
-    error = avg;
-    return error;
-}
+
 
 inline int derivativeAdjustment(double d_error, int error){
     //The higher the error, the smaller the return value

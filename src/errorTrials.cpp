@@ -61,8 +61,8 @@ int main(int argc, char* argv[]){
     Point p0 = Point{-2000, 2000};
     intr_mask = IntroducerMask(pre_img);
     int jointsCached = 0;
-    int error = 0, prev_error = 0;
-    int d_error = 0;
+    int error = 0, prev_xerror = 0, prev_yerror = 0;
+    int dx_error = 0, dy_error = 0;
     int step_count = 0;
     bool firstRun = true;
     bool finished = false;
@@ -208,47 +208,63 @@ int main(int argc, char* argv[]){
             desiredAngles_.end() - angles.size(), desiredAngles_.end());
         // std::vector<double> dAngleSlice = desiredAngles_;
 
-        if (firstRun) {
-            baseline_error = positionWiseError(idealPoints, Joints);
+
+        std::vector<double> desiredX, observedX, desiredY, observedY;
+        for(auto i: idealPoints){
+            desiredX.push_back(i.x);
+            desiredY.push_back(i.y);
+        }
+        for(auto i: Joints){
+            observedX.push_back(i.x);
+            observedY.push_back(i.y);
+        }
+        double xError = xwiseError(desiredX, observedX);
+        double yError = ywiseError(desiredY, observedY);
+        dx_error = xError - prev_xerror;
+        dy_error = yError - prev_yerror;
+        prev_xerror = xError;
+        prev_yerror = yError;
+        if(firstRun){
+            baseline_error = (xError + yError) / 2;
             firstRun = false;
         }
+        double baselineX = ((xError + yError) / 2) / baseline_error;
 
-        error = positionWiseError(idealPoints, Joints);
-        d_error = prev_error - error;
-        prev_error = error;
-        int Kd = derivativeAdjustment(abs(d_error),
-                                      error);  // send abs because we took care
-                                               // of signs a few lines above.
-        double Kp =
-            (double)error /
-            (double)baseline_error;  // a decimal of the error wrt the baseline
-        double KpPercent =
-            Kp * 100;  // a Percentage of the error wrt the baseline
-        std::cout << "\n-------------------------------------------------------"
-                     "--\n\n";
+        //create var xSign, which is 1 when xerror is positive, -1 when negative
+        int xFlag = std::signbit(xError) ? 1 : -1;
+        int yFlag = std::signbit(yError) ? -1 : 1;
+        int signFlag;
+        if( xFlag == -1 && yFlag == 1){
+            signFlag = -1;
+        } else signFlag = xFlag;
 
-        int signFlag = (d_error < 0) ? -1 : 1;
-        std::cout << "Baseline " << baseline_error;
-        std::cout << "\nError " << error << " d_error " << d_error;
-        std::cout << " -> Kd " << Kd << " ";
-        std::cout << "KpPercent " << KpPercent << "\n";
-        std::cout << "signFlag " << signFlag << "\n";
-        error = abs(error);
-        if (KpPercent < 21) {
+        double Kp = 1;
+        double Kd = derivativeAdjustmentF(dx_error);
+
+        if (finished) {
+            std::cout << "Victory\n";
+            std::cout << "End of operations\n";
+            imshow("Post", post_img);
+            char c = (char)waitKey(0);
+            if (c == 27)
+                break;
+            else
+                continue;
+        }
+        if (baselineX < 0.25) { 
             finished = true;
             continue;
-        } else if (KpPercent < 35) {
-            std::cout << "Adjusting by\n" << field << "\n";
-            std::cout <<  field * signFlag * Kd * Kp;
-            field *= 1.1 * signFlag;
-        } else {
+        } else if ( baseline_error > 0.25 && baseline_error < 0.5 ) { 
+            std::cout << "Adjusting field from\n" << field << "\n";
+            field += ( Kp * Kd) * signFlag * field;
+            std::cout << "To\n" << field << "\n";
+        } else { 
             std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
-            EMultiplier += (signFlag * Kd);
+            EMultiplier += (signFlag * Kd * 10 / 2);
             std::cout << EMultiplier << "\n";
             adjustStiffness(iLinks, EMultiplier);
             field = CalculateField(iLinks, iJoints, iPosVec);
             field = RotateField(field, reconciliationAngles);
-            field(1) = abs(field(0)) * -0.5;
         }
 
         std::cout << "E: " << EMultiplier << " applied field:\n"
