@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
     }
     bool rightHandBend = true;
     rightHandBend =
-        !std::signbit(avgVect(DesiredAngles));  // true if right handed
+        std::signbit(avgVect(DesiredAngles)) ? -1: 1;  // signit returns 1 if argument is negative. 0 if positive
 
     std::vector<Vector3d> Magnetisations(jointNo);
     Magnetisations[0] = Vector3d(-0.0011, 0, -0.0028);
