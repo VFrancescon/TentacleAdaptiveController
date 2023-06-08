@@ -21,11 +21,11 @@ int main(int argc, char *argv[]) {
 
     int jointEff = 5;
     int jointNo = jointEff + 1;
-    int jointMultiplier = 2;
+    int jointMultiplier = 1;
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{0, 0, 180};
+    Vector3d reconciliationAngles = Vector3d{0, 90, 180};
     double EMultiplier = 5;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
@@ -41,14 +41,14 @@ int main(int argc, char *argv[]) {
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
     } else {
-        DesiredAngles[0] = 20;
-        DesiredAngles[1] = 10;
-        DesiredAngles[2] = 10;
-        DesiredAngles[3] = 15;
-        DesiredAngles[4] = 15;
+        DesiredAngles[0] = -20;
+        DesiredAngles[1] = -10;
+        DesiredAngles[2] = -10;
+        DesiredAngles[3] = -15;
+        DesiredAngles[4] = -15;
         DesiredAngles[jointEff] = 0;
     }
-    bool rightHandBend = true;
+    int rightHandBend = 0;
     rightHandBend =
         std::signbit(avgVect(DesiredAngles)) ? -1: 1;  // signit returns 1 if argument is negative. 0 if positive
 
@@ -296,10 +296,10 @@ int main(int argc, char *argv[]) {
         prev_yerror = yError;
 
         if(firstRun){
-            baseline_error = (xError + yError) / 2;
+            baseline_error = (abs(xError) + yError) / 2;
             firstRun = false;
         }
-        double baselineX = ((xError + yError) / 2) / baseline_error;
+        double baselineX = (( abs(xError) + yError) / 2) / baseline_error;
         int xFlag = std::signbit(xError) ? 1 : -1;
         int yFlag = std::signbit(yError) ? -1 : 1;
         int signFlag;
@@ -319,25 +319,26 @@ int main(int argc, char *argv[]) {
             std::cout << "End of operations\n";
             imshow("Post", post_img);
             video_out.write(post_img);
+            video_out.write(post_img);
             char c = (char)waitKey(0);
             if (c == 27)
                 break;
             else
                 continue;
         }
-        if (baselineX < 0.25) { 
+        if (baselineX < 0.4) { 
             finished = true;
             continue;
-        } else if ( baseline_error > 0.25 && baseline_error < 0.5 ) { 
+        } else if ( baselineX > 0.4 && baselineX < 0.5 ) { 
             std::cout << "Adjusting field from\n" << field << "\n";
-            field += ( Kp * Kd) * signFlag * field;
+            field += ( Kp * Kd) * signFlag * rightHandBend * field;
             std::cout << "To\n" << field << "\n";
         } else { 
             std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
-            EMultiplier += (signFlag * Kd * 10 / 2);
+            EMultiplier += (Kd);
             std::cout << EMultiplier << "\n";
             adjustStiffness(iLinks, EMultiplier);
-            field = CalculateField(iLinks, iJoints, iPosVec);
+            field = CalculateField(iLinks, iJoints, iPosVec) * rightHandBend;
             field = RotateField(field, reconciliationAngles);
         }
 

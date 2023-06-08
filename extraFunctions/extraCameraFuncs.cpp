@@ -1,6 +1,6 @@
 #include "extraCameraFuncs.hpp"
 
-int threshold_low = 150;
+int threshold_low = 115;
 int threshold_high = 255;
 int link_lenght = 65;
 
