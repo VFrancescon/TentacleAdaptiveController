@@ -313,6 +313,7 @@ int main(int argc, char *argv[]) {
             firstRun = false;
         }
         if(controllerActive){
+            controllerActive = !controllerActive;
             double baselineX = (( abs(xError) + yError) / 2) / baseline_error;
             int xFlag = std::signbit(xError) ? 1 : -1;
             int yFlag = std::signbit(yError) ? -1 : 1;
