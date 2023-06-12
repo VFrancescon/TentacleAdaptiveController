@@ -50,7 +50,8 @@ bool yWiseSort(cv::Point lhs, cv::Point rhs) {
 bool euclideanSort(cv::Point lhs, cv::Point rhs) {
     double lhsDistance = std::sqrt(lhs.x * lhs.x + lhs.y * lhs.y);
     double rhsDistance = std::sqrt(rhs.x * rhs.x + rhs.y * rhs.y);
-    return lhsDistance < rhsDistance;
+    bool highervar = lhs.y < rhs.y;
+    return (lhsDistance < rhsDistance) && highervar;
 }
 
 std::vector<double> computeAngles(std::vector<Point> Joints)
