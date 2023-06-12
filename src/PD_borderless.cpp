@@ -186,7 +186,20 @@ int main(int argc, char *argv[]) {
     double success_val = 0.2;
     double low_val = 0.35;
     int rightFlag = (rightFlag ? 1 : -1);
+    //define start and end here
+    auto start = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
+    bool controllerActive = true;
+
     while (camera.IsGrabbing()) {
+
+        //query current time with std::chrono
+        if( std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() > 1000)
+        {
+            start = std::chrono::high_resolution_clock::now();
+            controllerActive = !controllerActive;
+        }
+
         camera.RetrieveResult(5000, ptrGrabResult,
                               Pylon::TimeoutHandling_ThrowException);
         const uint8_t *pImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
@@ -299,73 +312,76 @@ int main(int argc, char *argv[]) {
             baseline_error = (abs(xError) + yError) / 2;
             firstRun = false;
         }
-        double baselineX = (( abs(xError) + yError) / 2) / baseline_error;
-        int xFlag = std::signbit(xError) ? 1 : -1;
-        int yFlag = std::signbit(yError) ? -1 : 1;
-        int signFlag;
-        if( xFlag == -1 && yFlag == 1){
-            signFlag = -1;
-        } else signFlag = xFlag;
+        if(controllerActive){
+            double baselineX = (( abs(xError) + yError) / 2) / baseline_error;
+            int xFlag = std::signbit(xError) ? 1 : -1;
+            int yFlag = std::signbit(yError) ? -1 : 1;
+            int signFlag;
+            if( xFlag == -1 && yFlag == 1){
+                signFlag = -1;
+            } else signFlag = xFlag;
 
-        double Kp = 1;
-        double Kd = derivativeAdjustmentF(dx_error);
+            double Kp = 1;
+            double Kd = derivativeAdjustmentF(dx_error);
 
 
-        if (finished) {
-            std::cout << "Victory\n";
-            recordPerformance << step_count << "," << error << "," << dx_error
-                              << "," << EMultiplier << "," << field(0) << ","
-                              << field(1) << "," << field(2) << "\n";
-            std::cout << "End of operations\n";
-            imshow("Post", post_img);
-            video_out.write(post_img);
-            video_out.write(post_img);
-            char c = (char)waitKey(0);
-            if (c == 27)
-                break;
-            else
+            if (finished) {
+                std::cout << "Victory\n";
+                recordPerformance << step_count << "," << error << "," << dx_error
+                                << "," << EMultiplier << "," << field(0) << ","
+                                << field(1) << "," << field(2) << "\n";
+                std::cout << "End of operations\n";
+                cv::imshow("Post", post_img);
+                video_out.write(post_img);
+                video_out.write(post_img);
+                char c = (char)waitKey(0);
+                if (c == 27)
+                    break;
+                else
+                    continue;
+            }
+            if (baselineX < 0.4) { 
+                finished = true;
                 continue;
+            } else if ( baselineX > 0.4 && baselineX < 0.5 ) { 
+                std::cout << "Adjusting field from\n" << field << "\n";
+                field += ( Kp * Kd) * signFlag * rightHandBend * field;
+                std::cout << "To\n" << field << "\n";
+            } else { 
+                std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
+                EMultiplier += (Kd);
+                std::cout << EMultiplier << "\n";
+                adjustStiffness(iLinks, EMultiplier);
+                field = CalculateField(iLinks, iJoints, iPosVec) * rightHandBend;
+                field = RotateField(field, reconciliationAngles);
+            }
+
+            field(1) = abs(field(0)) * -0.5;
+            bx = field(0);
+            by = field(1);
+            bz = field(2);
+            std::cout << "E: " << EMultiplier << " applied field:\n"
+                    << field << "\n";
+
+            if (abs(field(0)) > 20 && abs(field(2)) > 15 && abs(field(1)) > 20)
+                break;
+            if (EMultiplier < 0) {
+                EMultiplier = 0;
+                continue;
+            }
+
+            mid.set3DField(field);
+            step_count++;
+            recordPerformance << step_count << "," << error << "," << dx_error << ","
+                            << EMultiplier << "," << field(0) << "," << field(1)
+                            << "," << field(2) << "\n";
         }
-        if (baselineX < 0.4) { 
-            finished = true;
-            continue;
-        } else if ( baselineX > 0.4 && baselineX < 0.5 ) { 
-            std::cout << "Adjusting field from\n" << field << "\n";
-            field += ( Kp * Kd) * signFlag * rightHandBend * field;
-            std::cout << "To\n" << field << "\n";
-        } else { 
-            std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
-            EMultiplier += (Kd);
-            std::cout << EMultiplier << "\n";
-            adjustStiffness(iLinks, EMultiplier);
-            field = CalculateField(iLinks, iJoints, iPosVec) * rightHandBend;
-            field = RotateField(field, reconciliationAngles);
-        }
-
-        field(1) = abs(field(0)) * -0.5;
-        bx = field(0);
-        by = field(1);
-        bz = field(2);
-        std::cout << "E: " << EMultiplier << " applied field:\n"
-                  << field << "\n";
-
-        if (abs(field(0)) > 20 && abs(field(2)) > 15 && abs(field(1)) > 20)
-            break;
-        if (EMultiplier < 0) {
-            EMultiplier = 0;
-            continue;
-        }
-
-        mid.set3DField(field);
-        step_count++;
-        recordPerformance << step_count << "," << error << "," << dx_error << ","
-                          << EMultiplier << "," << field(0) << "," << field(1)
-                          << "," << field(2) << "\n";
-
-        imshow("Post", post_img);
+        cv::imshow("Post", post_img);
         video_out.write(post_img);
-        char c = (char)waitKey(1e3);
+        char c = (char)waitKey(1);
         if (c == 27) break;
+        //query the end point of the clock with std::chrono
+        end = std::chrono::high_resolution_clock::now();
     }
     video_out.release();
     mid.~MiddlewareLayer();

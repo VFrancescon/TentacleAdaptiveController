@@ -4,6 +4,7 @@
 #include "extraCameraFuncs.hpp"
 #include "ExtraComputationFuncs.hpp"
 #include <ctime>
+#include <chrono>
 
 inline bool file_exists(const std::string &name)
 {
