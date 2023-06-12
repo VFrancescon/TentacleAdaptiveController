@@ -18,11 +18,11 @@ int main(int argc, char *argv[]) {
     recordPerformance.open("../PD_BORDERLESS_Results.csv", std::ios_base::app);
     recordPerformance << date << "\n";
     recordPerformance
-        << "Step, Error(t), Error(t-1), E_Multiplier, Bx, By, Bz\n";
+        << "Step, JointNo, Ex(t), Ey(t), BaselineX, E_Multiplier, Bx, By, Bz\n";
 
     int jointEff = 5;
     int jointNo = jointEff + 1;
-    int jointMultiplier = 1;
+    int jointMultiplier = 2;
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
@@ -49,9 +49,14 @@ int main(int argc, char *argv[]) {
         DesiredAngles[4] = -15;
         DesiredAngles[jointEff] = 0;
     }
+    if( argc == 2 || argc == 7) {
+        jointMultiplier = std::stoi(argv[argc-1]);
+    }
     int rightHandBend = 0;
     rightHandBend =
-        std::signbit(avgVect(DesiredAngles)) ? -1: 1;  // signit returns 1 if argument is negative. 0 if positive
+        std::signbit(avgVect(DesiredAngles))
+            ? -1
+            : 1;  // signit returns 1 if argument is negative. 0 if positive
 
     std::vector<Vector3d> Magnetisations(jointNo);
     Magnetisations[0] = Vector3d(-0.0011, 0, -0.0028);
@@ -61,12 +66,13 @@ int main(int argc, char *argv[]) {
     Magnetisations[4] = Vector3d(0, 0, -0.003);
     Magnetisations[jointEff] = Vector3d(0, 0, 0);
 
-    std::vector<double> DesiredAnglesSPLIT(jointEff*jointMultiplier);
-    std::vector<Vector3d> MagnetisationsSPLIT(jointEff*jointMultiplier);
-    if(jointMultiplier > 1){
-    //convert sub5 joint numbers
-        for(int i = 0; i < jointEff * jointMultiplier; i++) {
-            DesiredAnglesSPLIT[i] = DesiredAngles[i / jointMultiplier] / jointMultiplier;
+    std::vector<double> DesiredAnglesSPLIT(jointEff * jointMultiplier);
+    std::vector<Vector3d> MagnetisationsSPLIT(jointEff * jointMultiplier);
+    if (jointMultiplier > 1) {
+        // convert sub5 joint numbers
+        for (int i = 0; i < jointEff * jointMultiplier; i++) {
+            DesiredAnglesSPLIT[i] =
+                DesiredAngles[i / jointMultiplier] / jointMultiplier;
             MagnetisationsSPLIT[i] = Magnetisations[i / jointMultiplier];
         }
         DesiredAnglesSPLIT.push_back(0);
@@ -79,13 +85,11 @@ int main(int argc, char *argv[]) {
 
     std::vector<PosOrientation> iPosVec(jointEff * jointMultiplier + 1);
     std::vector<Joint> iJoints(jointEff * jointMultiplier + 1);
-    for (int i = 0; i < iPosVec.size(); i++)
-    {
+    for (int i = 0; i < iPosVec.size(); i++) {
         iJoints[i].assignPosOri(iPosVec[i]);
     }
 
-    for (int i = 0; i < iJoints.size(); i++)
-    {
+    for (int i = 0; i < iJoints.size(); i++) {
         iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT[i] * M_PI / 180, 0);
         iJoints[i].LocMag = MagnetisationsSPLIT[i];
     }
@@ -169,7 +173,7 @@ int main(int argc, char *argv[]) {
     // intr_mask = IntroducerMask(pre_img1);
     intr_mask = IntroducerMask(pre_img);
 
-    //find joints here
+    // find joints here
     resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
     Mat pre_img_grey, pre_img_th;
     Mat pre_img_masked = Mat::zeros(Size(rcols, rrows), CV_8UC1);
@@ -177,17 +181,16 @@ int main(int argc, char *argv[]) {
     cvtColor(pre_img, pre_img_grey, COLOR_BGR2GRAY);
     blur(pre_img_grey, pre_img_grey, Size(5, 5));
     threshold(pre_img_grey, pre_img_th, threshold_low, threshold_high,
-                THRESH_BINARY_INV);
+              THRESH_BINARY_INV);
     // post_img_th.copyTo(post_img_masked, intr_mask);
     pre_img_th.copyTo(pre_img_masked);
 
     std::vector<Point> preJoints;
     std::vector<std::vector<Point>> precontours;
 
-    preJoints = findJoints(pre_img_masked, precontours, jointEff*jointMultiplier+1);
+    preJoints = findJoints(pre_img_masked, precontours,
+                           jointEff * jointMultiplier + 1, Point(0, 0));
     Point baseFrame = preJoints.at(0);
-
-
 
     int jointsCached = 0;
     int error = 0, prev_xerror = 0, prev_yerror = 0;
@@ -199,25 +202,22 @@ int main(int argc, char *argv[]) {
     int baseline_error;
     int zero_count;
     int signFlag;
-    recordPerformance << step_count << "," << error << "," << dx_error << ","
-                      << EMultiplier << "," << field(0) << "," << field(1)
-                      << "," << field(2) << "\n";
+
     std::cout << "Ready to go. Press enter";
     std::cin.get();
 
     double success_val = 0.2;
     double low_val = 0.35;
     int rightFlag = (rightFlag ? 1 : -1);
-    //define start and end here
+    // define start and end here
     auto start = std::chrono::high_resolution_clock::now();
     auto end = std::chrono::high_resolution_clock::now();
     bool controllerActive = true;
 
     while (camera.IsGrabbing()) {
-
-        //query current time with std::chrono
-        if( std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() > 1000)
-        {
+        // query current time with std::chrono
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+                .count() > 5000) {
             start = std::chrono::high_resolution_clock::now();
             controllerActive = !controllerActive;
         }
@@ -247,20 +247,18 @@ int main(int argc, char *argv[]) {
         std::vector<Point> Joints;
         std::vector<std::vector<Point>> contours;
 
-        Joints = findJoints(post_img_masked, contours, jointEff*jointMultiplier+1);
-        for(auto &i: Joints)
-        {
-            i.x = baseFrame.x - i.x;
-            i.y = baseFrame.y - i.y;
+        Joints = findJoints(post_img_masked, contours,
+                            jointEff * jointMultiplier + 1, baseFrame);
+        for (auto i : Joints) {
             circle(post_img, i, 4, Scalar(255, 0, 0), FILLED);
         }
-        p0 = Joints[0];
+        p0 = baseFrame;
         int JointsObserved = Joints.size();
-        
+
         drawContours(post_img, contours, -1, Scalar(255, 255, 0));
         std::vector<double> angles;
-        std::vector<double> desiredAngles_ =
-            std::vector<double>(DesiredAnglesSPLIT.begin(), DesiredAnglesSPLIT.end() - 1);
+        std::vector<double> desiredAngles_ = std::vector<double>(
+            DesiredAnglesSPLIT.begin(), DesiredAnglesSPLIT.end() - 1);
         std::vector<Point> idealPoints;
         // if (p0 == Point{-2000, 2000})
 
@@ -269,10 +267,7 @@ int main(int argc, char *argv[]) {
         // "\n";
 
         angles = computeAngles(Joints);
-        for( auto &i: idealPoints){
-            i.x = baseFrame.x - i.x;
-            i.y = baseFrame.y - i.y;
-        }
+
         for (int i = 0; i < idealPoints.size() - 1; i++) {
             // std::cout << " " << i;
             line(post_img, idealPoints[i], idealPoints[i + 1],
@@ -296,11 +291,11 @@ int main(int argc, char *argv[]) {
         // std::vector<double> dAngleSlice = desiredAngles_;
 
         std::vector<double> desiredX, observedX, desiredY, observedY;
-        for(auto i: idealPoints){
+        for (auto i : idealPoints) {
             desiredX.push_back(i.x);
             desiredY.push_back(i.y);
         }
-        for(auto i: Joints){
+        for (auto i : Joints) {
             observedX.push_back(i.x);
             observedY.push_back(i.y);
         }
@@ -311,52 +306,54 @@ int main(int argc, char *argv[]) {
         prev_xerror = xError;
         prev_yerror = yError;
 
-        if(firstRun){
+        if (firstRun) {
             baseline_error = (abs(xError) + yError) / 2;
             firstRun = false;
         }
-        if(controllerActive){
+        if (controllerActive) {
             controllerActive = !controllerActive;
-            double baselineX = (( abs(xError) + yError) / 2) / baseline_error;
+            double baselineX = ((abs(xError) + yError) / 2) / baseline_error;
             int xFlag = std::signbit(xError) ? 1 : -1;
             int yFlag = std::signbit(yError) ? -1 : 1;
             int signFlag;
-            if( xFlag == -1 && yFlag == 1){
+            if (xFlag == -1 && yFlag == 1) {
                 signFlag = -1;
-            } else signFlag = xFlag;
+            } else
+                signFlag = xFlag;
 
             double Kp = 1;
             double Kd = derivativeAdjustmentF(dx_error);
 
-
             if (finished) {
                 std::cout << "Victory\n";
-                recordPerformance << step_count << "," << error << "," << dx_error
-                                << "," << EMultiplier << "," << field(0) << ","
-                                << field(1) << "," << field(2) << "\n";
-                std::cout << "End of operations\n";
+                recordPerformance
+                    << step_count << "," << jointEff * jointMultiplier << ","
+                    << xError << "," << yError << ","
+                    << "," << baselineX << "," << EMultiplier << "," << field(0)
+                    << "," << field(1) << "," << field(2) << "\n";
                 cv::imshow("Post", post_img);
                 video_out.write(post_img);
-                video_out.write(post_img);
-                char c = (char)waitKey(0);
+                char c = (char)waitKey(1);
                 if (c == 27)
                     break;
                 else
                     continue;
             }
-            if (baselineX < 0.4) { 
+            if (baselineX < 0.3) {
                 finished = true;
                 continue;
-            } else if ( baselineX > 0.4 && baselineX < 0.5 ) { 
+            } else if (baselineX > 0.3 && baselineX < 0.5) {
                 std::cout << "Adjusting field from\n" << field << "\n";
-                field += ( Kp * Kd) * signFlag * rightHandBend * field;
+                field += (Kp * Kd) * signFlag * rightHandBend * field;
                 std::cout << "To\n" << field << "\n";
-            } else { 
-                std::cout << "Adjusting Emultiplier from " << EMultiplier << " to ";
+            } else {
+                std::cout << "Adjusting Emultiplier from " << EMultiplier
+                          << " to ";
                 EMultiplier += (Kd);
                 std::cout << EMultiplier << "\n";
                 adjustStiffness(iLinks, EMultiplier);
-                field = CalculateField(iLinks, iJoints, iPosVec) * rightHandBend;
+                field =
+                    CalculateField(iLinks, iJoints, iPosVec) * rightHandBend;
                 field = RotateField(field, reconciliationAngles);
             }
 
@@ -365,7 +362,7 @@ int main(int argc, char *argv[]) {
             by = field(1);
             bz = field(2);
             std::cout << "E: " << EMultiplier << " applied field:\n"
-                    << field << "\n";
+                      << field << "\n";
 
             if (abs(field(0)) > 20 && abs(field(2)) > 15 && abs(field(1)) > 20)
                 break;
@@ -376,15 +373,17 @@ int main(int argc, char *argv[]) {
 
             mid.set3DField(field);
             step_count++;
-            recordPerformance << step_count << "," << error << "," << dx_error << ","
-                            << EMultiplier << "," << field(0) << "," << field(1)
-                            << "," << field(2) << "\n";
+            recordPerformance << step_count << "," << jointEff * jointMultiplier
+                              << "," << xError << "," << yError << ","
+                              << "," << baselineX << "," << EMultiplier << ","
+                              << field(0) << "," << field(1) << "," << field(2)
+                              << "\n";
         }
         cv::imshow("Post", post_img);
         video_out.write(post_img);
         char c = (char)waitKey(1);
         if (c == 27) break;
-        //query the end point of the clock with std::chrono
+        // query the end point of the clock with std::chrono
         end = std::chrono::high_resolution_clock::now();
     }
     video_out.release();
@@ -392,33 +391,32 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void drawLegend(Mat &post_img){
+void drawLegend(Mat &post_img) {
     // #region legend
-        /**
-         * @brief DRAW A LEGEND
-         */
-        cv::Point TopLeftLegend(0, 390);
-        cv::Point BottomRightLegend(230, 450);
-        cv::Point InnerTopLeftLegend(4, 404);
-        cv::Point InnerBottomRightLegend(196, 446);
+    /**
+     * @brief DRAW A LEGEND
+     */
+    cv::Point TopLeftLegend(0, 390);
+    cv::Point BottomRightLegend(230, 450);
+    cv::Point InnerTopLeftLegend(4, 404);
+    cv::Point InnerBottomRightLegend(196, 446);
 
-        rectangle(post_img, TopLeftLegend, BottomRightLegend, Scalar(0, 0, 0),
-                  4);
-        rectangle(post_img, InnerTopLeftLegend, InnerBottomRightLegend,
-                  Scalar(255, 255, 255), 1);
+    rectangle(post_img, TopLeftLegend, BottomRightLegend, Scalar(0, 0, 0), 4);
+    rectangle(post_img, InnerTopLeftLegend, InnerBottomRightLegend,
+              Scalar(255, 255, 255), 1);
 
-        putText(post_img, "Detected", TopLeftLegend + Point(84, 26),
-                FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 0));
-        putText(post_img, "Desired", TopLeftLegend + Point(84, 52),
-                FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 0));
-        // blue rect. Desired
-        rectangle(post_img, TopLeftLegend + Point(5, 12),
-                  TopLeftLegend + Point(80, 22), Scalar(255, 0, 0), FILLED);
-        // red rect. Detected
-        rectangle(post_img, TopLeftLegend + Point(5, 38),
-                  TopLeftLegend + Point(80, 48), Scalar(0, 0, 255), FILLED);
-        /**
-         * @brief DRAW A LEGEND
-         */
-        // #endregion
+    putText(post_img, "Detected", TopLeftLegend + Point(84, 26),
+            FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 0));
+    putText(post_img, "Desired", TopLeftLegend + Point(84, 52),
+            FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 0));
+    // blue rect. Desired
+    rectangle(post_img, TopLeftLegend + Point(5, 12),
+              TopLeftLegend + Point(80, 22), Scalar(255, 0, 0), FILLED);
+    // red rect. Detected
+    rectangle(post_img, TopLeftLegend + Point(5, 38),
+              TopLeftLegend + Point(80, 48), Scalar(0, 0, 255), FILLED);
+    /**
+     * @brief DRAW A LEGEND
+     */
+    // #endregion
 }

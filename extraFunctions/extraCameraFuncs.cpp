@@ -2,12 +2,12 @@
 
 int threshold_low = 115;
 int threshold_high = 255;
-int link_lenght = 65;
+int link_lenght = 40;
 
 int PYLON_WIDTH = 1920;
 int PYLON_HEIGHT = 1200;
 float exposureTime = 15000.0;
-
+Point p0frame = Point(0, 0);
 Mat IntroducerMask(Mat src)
 {
     Mat src_GRAY, element;
@@ -48,10 +48,13 @@ bool yWiseSort(cv::Point lhs, cv::Point rhs) {
 
 
 bool euclideanSort(cv::Point lhs, cv::Point rhs) {
-    double lhsDistance = std::sqrt(lhs.x * lhs.x + lhs.y * lhs.y);
-    double rhsDistance = std::sqrt(rhs.x * rhs.x + rhs.y * rhs.y);
-    bool highervar = lhs.y < rhs.y;
-    return (lhsDistance < rhsDistance) && highervar;
+    double lhx =  p0frame.x - lhs.x ;
+    double lhy =  p0frame.y + lhs.y ;
+    double rhx =  p0frame.x - rhs.x ;
+    double rhy =  p0frame.y + rhs.y ;
+    double lhsDistance = std::sqrt(lhx * lhx + lhy * lhy);
+    double rhsDistance = std::sqrt(rhx * rhx + rhy * rhy);
+    return (lhsDistance < rhsDistance);
 }
 
 std::vector<double> computeAngles(std::vector<Point> Joints)
@@ -94,8 +97,8 @@ std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngle
         double angle = 0;
         for (int k = 0; k < i; k++)
             angle += desiredAngles_[k];
-        int xdiff = (link_lenght + 10) * sin(angle * M_PI / 180);
-        int ydiff = (link_lenght + 10) * cos(angle * M_PI / 180);
+        int xdiff = (link_lenght) * sin(angle * M_PI / 180);
+        int ydiff = (link_lenght) * cos(angle * M_PI / 180);
         Point pn = Point{(int)(ideal[i - 1].x + xdiff), (int)(ideal[i - 1].y + ydiff)};
         ideal.push_back(pn);
     }
@@ -106,7 +109,8 @@ std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngle
     return ideal;
 }
 
-std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point>> &contours, int JointNumber)
+std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point>> &contours, 
+    int JointNumber, Point baseFrame)
 {
     // std::cout << "---------------\n\nExtafuncs version\n";
     Mat contours_bin;
@@ -130,6 +134,7 @@ std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point
 
     std::vector<Point> cntLine;
     findNonZero(skeleton, cntLine);
+    p0frame = baseFrame;
     std::sort(cntLine.begin(), cntLine.end(), euclideanSort);
     // std::reverse(cntLine.begin(), cntLine.end());
 

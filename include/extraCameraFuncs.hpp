@@ -21,6 +21,8 @@ extern int PYLON_WIDTH;
 extern int PYLON_HEIGHT;
 extern float exposureTime;
 
+extern Point p0frame ;
+
 /**
  * @brief Generates a Mask containing all pre-introduction elements to block them out in processing.
  * Use cv::Mat.copy_to(dst, mask) to apply later.
@@ -68,6 +70,16 @@ std::vector<double> computeAngles(std::vector<Point> Joints);
 std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngles_);
 
 
+// /**
+ 
+//  * @brief Finds ordered list of joints from a given masked image. Uses Zhang Suen thinning.
+//  *
+//  * @param post_img_masked Source image, containing isolated catheter only.
+//  * @param contours reference to contorus vector, sent for debugging.
+//  * @return std::vector<Point> Set of points containing all the detected joint angles. Size n.
+//  */
+// std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point>> &contours, int JointNumber=6);
+
 /**
  
  * @brief Finds ordered list of joints from a given masked image. Uses Zhang Suen thinning.
@@ -76,7 +88,8 @@ std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngle
  * @param contours reference to contorus vector, sent for debugging.
  * @return std::vector<Point> Set of points containing all the detected joint angles. Size n.
  */
-std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point>> &contours, int JointNumber=6);
+std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point>> &contours, 
+    int JointNumber=6, Point baseFrame = Point(0,0));
 
 /**
  * @brief Averages an std::vector.
