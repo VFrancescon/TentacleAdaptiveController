@@ -1,6 +1,7 @@
 #include "ControllerPrototype.hpp"
 #include "HCoilMiddlewareLib/HCoilMiddlewareLib.hpp"
 
+void drawLegend(Mat &post_img);
 
 int main(int argc, char *argv[]) {
     /**
@@ -167,6 +168,27 @@ int main(int argc, char *argv[]) {
     // Mat pre_img1 = Mat::zeros(Size(rcols, rrows), CV_8UC3);
     // intr_mask = IntroducerMask(pre_img1);
     intr_mask = IntroducerMask(pre_img);
+
+    //find joints here
+    resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
+    Mat pre_img_grey, pre_img_th;
+    Mat pre_img_masked = Mat::zeros(Size(rcols, rrows), CV_8UC1);
+
+    cvtColor(pre_img, pre_img_grey, COLOR_BGR2GRAY);
+    blur(pre_img_grey, pre_img_grey, Size(5, 5));
+    threshold(pre_img_grey, pre_img_th, threshold_low, threshold_high,
+                THRESH_BINARY_INV);
+    // post_img_th.copyTo(post_img_masked, intr_mask);
+    pre_img_th.copyTo(pre_img_masked);
+
+    std::vector<Point> preJoints;
+    std::vector<std::vector<Point>> precontours;
+
+    preJoints = findJoints(pre_img_masked, precontours, jointEff*jointMultiplier+1);
+    Point baseFrame = preJoints.at(0);
+
+
+
     int jointsCached = 0;
     int error = 0, prev_xerror = 0, prev_yerror = 0;
     int dx_error = 0, dy_error = 0;
@@ -226,23 +248,31 @@ int main(int argc, char *argv[]) {
         std::vector<std::vector<Point>> contours;
 
         Joints = findJoints(post_img_masked, contours, jointEff*jointMultiplier+1);
-        int JointsObserved = Joints.size();
-        for (auto i : Joints) {
+        for(auto &i: Joints)
+        {
+            i.x = baseFrame.x - i.x;
+            i.y = baseFrame.y - i.y;
             circle(post_img, i, 4, Scalar(255, 0, 0), FILLED);
         }
+        p0 = Joints[0];
+        int JointsObserved = Joints.size();
+        
         drawContours(post_img, contours, -1, Scalar(255, 255, 0));
         std::vector<double> angles;
         std::vector<double> desiredAngles_ =
             std::vector<double>(DesiredAnglesSPLIT.begin(), DesiredAnglesSPLIT.end() - 1);
         std::vector<Point> idealPoints;
         // if (p0 == Point{-2000, 2000})
-        p0 = Joints[0];
 
         idealPoints = computeIdealPoints(p0, DesiredAnglesSPLIT);
         // std::cout << "Desired angles slice size: " << DesiredAngles.size() <<
         // "\n";
 
         angles = computeAngles(Joints);
+        for( auto &i: idealPoints){
+            i.x = baseFrame.x - i.x;
+            i.y = baseFrame.y - i.y;
+        }
         for (int i = 0; i < idealPoints.size() - 1; i++) {
             // std::cout << " " << i;
             line(post_img, idealPoints[i], idealPoints[i + 1],
@@ -258,34 +288,7 @@ int main(int argc, char *argv[]) {
                 idealPoints[idealPoints.size() - 1], FONT_HERSHEY_SIMPLEX, 1.0,
                 Scalar(255, 0, 0));
 
-        // #region legend
-        /**
-         * @brief DRAW A LEGEND
-         */
-        cv::Point TopLeftLegend(0, 390);
-        cv::Point BottomRightLegend(230, 450);
-        cv::Point InnerTopLeftLegend(4, 404);
-        cv::Point InnerBottomRightLegend(196, 446);
-
-        rectangle(post_img, TopLeftLegend, BottomRightLegend, Scalar(0, 0, 0),
-                  4);
-        rectangle(post_img, InnerTopLeftLegend, InnerBottomRightLegend,
-                  Scalar(255, 255, 255), 1);
-
-        putText(post_img, "Detected", TopLeftLegend + Point(84, 26),
-                FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 0));
-        putText(post_img, "Desired", TopLeftLegend + Point(84, 52),
-                FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 0));
-        // blue rect. Desired
-        rectangle(post_img, TopLeftLegend + Point(5, 12),
-                  TopLeftLegend + Point(80, 22), Scalar(255, 0, 0), FILLED);
-        // red rect. Detected
-        rectangle(post_img, TopLeftLegend + Point(5, 38),
-                  TopLeftLegend + Point(80, 48), Scalar(0, 0, 255), FILLED);
-        /**
-         * @brief DRAW A LEGEND
-         */
-        // #endregion
+        drawLegend(post_img);
 
         jointsCached = JointsObserved;
         std::vector<double> dAngleSlice = std::vector<double>(
@@ -387,4 +390,35 @@ int main(int argc, char *argv[]) {
     video_out.release();
     mid.~MiddlewareLayer();
     return 0;
+}
+
+void drawLegend(Mat &post_img){
+    // #region legend
+        /**
+         * @brief DRAW A LEGEND
+         */
+        cv::Point TopLeftLegend(0, 390);
+        cv::Point BottomRightLegend(230, 450);
+        cv::Point InnerTopLeftLegend(4, 404);
+        cv::Point InnerBottomRightLegend(196, 446);
+
+        rectangle(post_img, TopLeftLegend, BottomRightLegend, Scalar(0, 0, 0),
+                  4);
+        rectangle(post_img, InnerTopLeftLegend, InnerBottomRightLegend,
+                  Scalar(255, 255, 255), 1);
+
+        putText(post_img, "Detected", TopLeftLegend + Point(84, 26),
+                FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 0));
+        putText(post_img, "Desired", TopLeftLegend + Point(84, 52),
+                FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 0));
+        // blue rect. Desired
+        rectangle(post_img, TopLeftLegend + Point(5, 12),
+                  TopLeftLegend + Point(80, 22), Scalar(255, 0, 0), FILLED);
+        // red rect. Detected
+        rectangle(post_img, TopLeftLegend + Point(5, 38),
+                  TopLeftLegend + Point(80, 48), Scalar(0, 0, 255), FILLED);
+        /**
+         * @brief DRAW A LEGEND
+         */
+        // #endregion
 }
