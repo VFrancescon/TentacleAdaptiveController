@@ -33,7 +33,7 @@
         "type": "cppdbg",
         "request": "launch",
         "program": "${workspaceFolder}/build/pd_borderless",
-        "args": ["10", "15", "20", "20", "15"],
+        "args": ["0", "-10", "-10", "-20", "-25", "2"],
         "stopAtEntry": false,
         "cwd": "${workspaceFolder}",
         "environment": [],

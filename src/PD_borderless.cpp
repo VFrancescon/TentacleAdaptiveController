@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 
     int jointEff = 5;
     int jointNo = jointEff + 1;
-    int jointMultiplier = 2;
+    int jointMultiplier = 1;
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     std::vector<Vector3d> AppliedFields;
 
     std::vector<double> DesiredAngles(jointNo);
-    if (argc == 6) {
+    if (argc > 5) {
         DesiredAngles[0] = std::stod(argv[1]);
         DesiredAngles[1] = std::stod(argv[2]);
         DesiredAngles[2] = std::stod(argv[3]);
@@ -42,11 +42,11 @@ int main(int argc, char *argv[]) {
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
     } else {
-        DesiredAngles[0] = -20;
-        DesiredAngles[1] = -10;
-        DesiredAngles[2] = -10;
-        DesiredAngles[3] = -15;
-        DesiredAngles[4] = -15;
+        DesiredAngles[0] = 15;
+        DesiredAngles[1] = 15;
+        DesiredAngles[2] = 20;
+        DesiredAngles[3] = 20;
+        DesiredAngles[4] = 25;
         DesiredAngles[jointEff] = 0;
     }
     if( argc == 2 || argc == 7) {
@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
     while (camera.IsGrabbing()) {
         // query current time with std::chrono
         if (std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
-                .count() > 5000) {
+                .count() > 2000) {
             start = std::chrono::high_resolution_clock::now();
             controllerActive = !controllerActive;
         }
@@ -321,7 +321,7 @@ int main(int argc, char *argv[]) {
             } else
                 signFlag = xFlag;
 
-            double Kp = 1;
+            double Kp = 0.1;
             double Kd = derivativeAdjustmentF(dx_error);
 
             if (finished) {
@@ -339,17 +339,17 @@ int main(int argc, char *argv[]) {
                 else
                     continue;
             }
-            if (baselineX < 0.3) {
+            if (baselineX < 0.2) {
                 finished = true;
                 continue;
-            } else if (baselineX > 0.3 && baselineX < 0.5) {
+            } else if (baselineX > 0.2 && baselineX < 0.4) {
                 std::cout << "Adjusting field from\n" << field << "\n";
                 field += (Kp * Kd) * signFlag * rightHandBend * field;
                 std::cout << "To\n" << field << "\n";
             } else {
                 std::cout << "Adjusting Emultiplier from " << EMultiplier
                           << " to ";
-                EMultiplier += (Kd);
+                EMultiplier += (Kd) * jointMultiplier;
                 std::cout << EMultiplier << "\n";
                 adjustStiffness(iLinks, EMultiplier);
                 field =
