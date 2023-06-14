@@ -2,6 +2,10 @@
 #include "HCoilMiddlewareLib/HCoilMiddlewareLib.hpp"
 
 void drawLegend(Mat &post_img);
+Mat preprocessImg(Mat &post_img);
+
+int rrows;
+int rcols;
 
 int main(int argc, char *argv[]) {
     /**
@@ -149,8 +153,8 @@ int main(int argc, char *argv[]) {
                       CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
 
     // resizing the image for faster processing
-    int rrows = pre_img.rows * 3 / 8;
-    int rcols = pre_img.cols * 3 / 8;
+    rrows = pre_img.rows * 3 / 8;
+    rcols = pre_img.cols * 3 / 8;
 
     /**************************************************************
      *
@@ -233,16 +237,9 @@ int main(int argc, char *argv[]) {
         if (post_img.empty()) {
             break;
         }
-        resize(post_img, post_img, Size(rcols, rrows), INTER_LINEAR);
-        Mat post_img_grey, post_img_th;
         Mat post_img_masked = Mat::zeros(Size(rcols, rrows), CV_8UC1);
-
-        cvtColor(post_img, post_img_grey, COLOR_BGR2GRAY);
-        blur(post_img_grey, post_img_grey, Size(5, 5));
-        threshold(post_img_grey, post_img_th, threshold_low, threshold_high,
-                  THRESH_BINARY_INV);
-        // post_img_th.copyTo(post_img_masked, intr_mask);
-        post_img_th.copyTo(post_img_masked);
+        post_img_masked = preprocessImg(post_img);
+        
 
         std::vector<Point> Joints;
         std::vector<std::vector<Point>> contours;
@@ -321,7 +318,7 @@ int main(int argc, char *argv[]) {
             } else
                 signFlag = xFlag;
 
-            double Kp = 0.1;
+            double Kp = 0.5;
             double Kd = derivativeAdjustmentF(dx_error);
 
             if (finished) {
@@ -392,10 +389,7 @@ int main(int argc, char *argv[]) {
 }
 
 void drawLegend(Mat &post_img) {
-    // #region legend
-    /**
-     * @brief DRAW A LEGEND
-     */
+
     cv::Point TopLeftLegend(0, 390);
     cv::Point BottomRightLegend(230, 450);
     cv::Point InnerTopLeftLegend(4, 404);
@@ -415,8 +409,19 @@ void drawLegend(Mat &post_img) {
     // red rect. Detected
     rectangle(post_img, TopLeftLegend + Point(5, 38),
               TopLeftLegend + Point(80, 48), Scalar(0, 0, 255), FILLED);
-    /**
-     * @brief DRAW A LEGEND
-     */
-    // #endregion
+
+
+}
+
+Mat preprocessImg(Mat &post_img){
+    resize(post_img, post_img, Size(rcols, rrows), INTER_LINEAR);
+    Mat post_img_grey, post_img_th;
+    Mat post_img_masked = Mat::zeros(Size(rcols, rrows), CV_8UC1);
+
+    cvtColor(post_img, post_img_grey, COLOR_BGR2GRAY);
+    blur(post_img_grey, post_img_grey, Size(5, 5));
+    threshold(post_img_grey, post_img_th, threshold_low, threshold_high,
+                THRESH_BINARY_INV);
+    // post_img_th.copyTo(post_img_masked, intr_mask);
+    post_img_th.copyTo(post_img_masked);
 }
