@@ -6,7 +6,6 @@ Mat preprocessImg(Mat &post_img);
 int rrows;
 int rcols;
 
-std::vector<Point> findCtrLine(Mat post_img_masked, std::vector<std::vector<Point>> &contours);
 
 int main(int argc, char *argv[]) {
 
@@ -72,7 +71,8 @@ int main(int argc, char *argv[]) {
 
     std::vector<Point> cntrLine;
     std::vector<std::vector<Point>> precontours;
-
+    cntrLine = findCtrLine(pre_img_masked, precontours);
+    Point base = cntrLine.at(0);
 
     while(true){
 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
         post_img_masked = preprocessImg(post_img);
 
 
-        cntrLine = findCtrLine(post_img_masked, precontours);
+        cntrLine = findCtrLine(post_img_masked, precontours,base);
 
         imshow("Centreline", post_img);
         char c = (char)waitKey(1);
@@ -149,35 +149,3 @@ Mat preprocessImg(Mat &post_img){
     return post_img_masked;
 }
 
-std::vector<Point> findCtrLine(Mat post_img_masked, std::vector<std::vector<Point>> &contours)
-{
-    // std::cout << "---------------\n\nExtafuncs version\n";
-    Mat contours_bin;
-    // std::vector<std::vector<Point> > contours;
-    std::vector<Vec4i> hierarchy;
-    // find contours, ignore hierarchy
-    findContours(post_img_masked, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
-    contours_bin = Mat::zeros(post_img_masked.size(), CV_8UC1);
-
-    // draw contours and fill the open area
-    drawContours(contours_bin, contours, -1, Scalar(255, 255, 255), cv::FILLED, LINE_8, hierarchy);
-    // empty matrix. Set up to 8-bit 1 channel data. Very important to set up properly.
-    Mat skeleton = Mat::zeros(post_img_masked.rows, post_img_masked.rows, CV_8U);
-
-    // take the filled contour and thin it using Zhang Suen method. Only works with 8-bit 1 channel data.
-    ximgproc::thinning(contours_bin, skeleton, 0);
-
-    contours.clear();
-    hierarchy.clear();
-    findContours(skeleton, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
-
-    std::vector<Point> cntLine;
-    findNonZero(skeleton, cntLine);
-
-    Point basePoint = cntLine.at(0);
-
-    for(int i = 0; i < cntLine.size(); i++){
-        cntLine.at(i) = basePoint - cntLine.at(i) ;
-    }
-    return cntLine;
-}

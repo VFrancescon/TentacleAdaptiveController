@@ -91,6 +91,8 @@ std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngle
 std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point>> &contours, 
     int JointNumber=6, Point baseFrame = Point(0,0));
 
+std::vector<Point> findCtrLine(Mat post_img_masked, std::vector<std::vector<Point>> &contours, Point baseFrame = Point(0,0));
+
 /**
  * @brief Averages an std::vector.
  *

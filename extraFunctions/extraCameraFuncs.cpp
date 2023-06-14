@@ -156,6 +156,37 @@ std::vector<Point> findJoints(Mat post_img_masked, std::vector<std::vector<Point
     return Joints;
 }
 
+std::vector<Point> findCtrLine(Mat post_img_masked, std::vector<std::vector<Point>> &contours, Point baseFrame)
+{
+    // std::cout << "---------------\n\nExtafuncs version\n";
+    Mat contours_bin;
+    // std::vector<std::vector<Point> > contours;
+    std::vector<Vec4i> hierarchy;
+    // find contours, ignore hierarchy
+    findContours(post_img_masked, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
+    contours_bin = Mat::zeros(post_img_masked.size(), CV_8UC1);
+
+    // draw contours and fill the open area
+    drawContours(contours_bin, contours, -1, Scalar(255, 255, 255), cv::FILLED, LINE_8, hierarchy);
+    // empty matrix. Set up to 8-bit 1 channel data. Very important to set up properly.
+    Mat skeleton = Mat::zeros(post_img_masked.rows, post_img_masked.rows, CV_8U);
+
+    // take the filled contour and thin it using Zhang Suen method. Only works with 8-bit 1 channel data.
+    ximgproc::thinning(contours_bin, skeleton, 0);
+
+    contours.clear();
+    hierarchy.clear();
+    findContours(skeleton, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
+
+    std::vector<Point> cntLine;
+    findNonZero(skeleton, cntLine);
+    p0frame = baseFrame;
+    std::sort(cntLine.begin(), cntLine.end(), euclideanSort);
+    for(int i = 0; i < cntLine.size(); i++){
+        cntLine.at(i) = p0frame - cntLine.at(i) ;
+    }
+    return cntLine;
+}
 
 /**
  * Behold! A function that computes equally spaced points from a given
