@@ -91,9 +91,8 @@ int main(int argc, char *argv[]) {
         post_img_masked = preprocessImg(post_img);
 
 
-        cntrLine = findCtrLine(post_img, precontours);
+        cntrLine = findCtrLine(post_img_masked, precontours);
 
-        cv::imshow("Post", post_img);
         imshow("Centreline", post_img);
         char c = (char)waitKey(1);
         if (c == 115) {
@@ -177,8 +176,8 @@ std::vector<Point> findCtrLine(Mat post_img_masked, std::vector<std::vector<Poin
 
     Point basePoint = cntLine.at(0);
 
-    for(int i = 1; i < cntLine.size(); i++){
-        cntLine.at(i) = basePoint + cntLine.at(i) ;
+    for(int i = 0; i < cntLine.size(); i++){
+        cntLine.at(i) = basePoint - cntLine.at(i) ;
     }
     return cntLine;
 }
