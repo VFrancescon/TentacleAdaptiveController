@@ -182,9 +182,7 @@ std::vector<Point> findCtrLine(Mat post_img_masked, std::vector<std::vector<Poin
     findNonZero(skeleton, cntLine);
     p0frame = baseFrame;
     std::sort(cntLine.begin(), cntLine.end(), euclideanSort);
-    for(int i = 0; i < cntLine.size(); i++){
-        cntLine.at(i) = p0frame - cntLine.at(i) ;
-    }
+
     return cntLine;
 }
 
