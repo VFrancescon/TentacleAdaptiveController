@@ -163,6 +163,11 @@ int main(int argc, char *argv[]) {
      *
      *
      *****************************************************************/
+    std::string angleSTR;
+    for(auto i: DesiredAngles){
+        angleSTR += std::to_string(i) + "_";
+    }
+
     std::string outputPath = "PD_BORDERLESS_" + date + ".avi";
 
     while (file_exists(outputPath)) {
@@ -325,7 +330,7 @@ int main(int argc, char *argv[]) {
                 std::cout << "Victory\n";
                 recordPerformance
                     << step_count << "," << jointEff * jointMultiplier << ","
-                    << xError << "," << yError << ","
+                    << xError << "," << yError
                     << "," << baselineX << "," << EMultiplier << "," << field(0)
                     << "," << field(1) << "," << field(2) << "\n";
                 cv::imshow("Post", post_img);
@@ -336,17 +341,17 @@ int main(int argc, char *argv[]) {
                 else
                     continue;
             }
-            if (baselineX < 0.2) {
+            if (baselineX < 0.1) {
                 finished = true;
                 continue;
-            } else if (baselineX > 0.2 && baselineX < 0.4) {
+            } else if (baselineX > 0.1 && baselineX < 0.4) {
                 std::cout << "Adjusting field from\n" << field << "\n";
                 field += (Kp * Kd) * signFlag * rightHandBend * field;
                 std::cout << "To\n" << field << "\n";
             } else {
                 std::cout << "Adjusting Emultiplier from " << EMultiplier
                           << " to ";
-                EMultiplier += (Kd) * jointMultiplier;
+                EMultiplier += (Kd) * jointMultiplier * signFlag * rightHandBend;
                 std::cout << EMultiplier << "\n";
                 adjustStiffness(iLinks, EMultiplier);
                 field =
@@ -370,11 +375,11 @@ int main(int argc, char *argv[]) {
 
             mid.set3DField(field);
             step_count++;
-            recordPerformance << step_count << "," << jointEff * jointMultiplier
-                              << "," << xError << "," << yError << ","
-                              << "," << baselineX << "," << EMultiplier << ","
-                              << field(0) << "," << field(1) << "," << field(2)
-                              << "\n";
+                recordPerformance
+                    << step_count << "," << jointEff * jointMultiplier << ","
+                    << xError << "," << yError
+                    << "," << baselineX << "," << EMultiplier << "," << field(0)
+                    << "," << field(1) << "," << field(2) << "\n";
         }
         cv::imshow("Post", post_img);
         video_out.write(post_img);
@@ -424,4 +429,5 @@ Mat preprocessImg(Mat &post_img){
                 THRESH_BINARY_INV);
     // post_img_th.copyTo(post_img_masked, intr_mask);
     post_img_th.copyTo(post_img_masked);
+    return post_img_masked;
 }

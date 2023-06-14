@@ -97,8 +97,8 @@ std::vector<Point> computeIdealPoints(Point p0, std::vector<double> desiredAngle
         double angle = 0;
         for (int k = 0; k < i; k++)
             angle += desiredAngles_[k];
-        int xdiff = (link_lenght) * sin(angle * M_PI / 180);
-        int ydiff = (link_lenght) * cos(angle * M_PI / 180);
+        int xdiff = (double) (link_lenght) * 1.15 * sin(angle * M_PI / 180);
+        int ydiff = (double) (link_lenght) * 1.15  * cos(angle * M_PI / 180);
         Point pn = Point{(int)(ideal[i - 1].x + xdiff), (int)(ideal[i - 1].y + ydiff)};
         ideal.push_back(pn);
     }
