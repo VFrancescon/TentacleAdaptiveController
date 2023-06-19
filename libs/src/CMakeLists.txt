@@ -1,6 +1,6 @@
 find_package(Threads REQUIRED)
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
-
+include_directories(/opt/pylon/include)
 # STEP 1: Include cpp files
 
 file(GLOB_RECURSE AC_VISION_SRC
@@ -29,7 +29,7 @@ target_include_directories(AC_Vision PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_S
 target_include_directories(AC_Comp PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>"
                                                 "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>")                    
 
-target_link_libraries(AC_Vision Eigen3::Eigen ${OpenCV_LIBS} Threads::Threads)
+target_link_libraries(AC_Vision Eigen3::Eigen ${Pylon_LIBRARIES} ${OpenCV_LIBS} Threads::Threads)
 target_link_libraries(AC_Comp Eigen3::Eigen Threads::Threads)
 
 #STEP 6: Install bin
