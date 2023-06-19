@@ -11,17 +11,17 @@ VisionClass::VisionClass() {
     this->p0frame = Point(0, 0);
 }
 
-VisionClass::VisionClass(int threshold_low, int threshold_high, int link_lenght,
-                         int PYLON_WIDTH, int PYLON_HEIGHT, float exposureTime,
-                         Point p0frame) {
-    this->threshold_low = threshold_low;
-    this->threshold_high = threshold_high;
-    this->link_lenght = link_lenght;
-    this->PYLON_WIDTH = PYLON_WIDTH;
-    this->PYLON_HEIGHT = PYLON_HEIGHT;
-    this->exposureTime = exposureTime;
-    this->p0frame = p0frame;
-}
+// VisionClass::VisionClass(int threshold_low, int threshold_high, int link_lenght,
+//                          int PYLON_WIDTH, int PYLON_HEIGHT, float exposureTime,
+//                          Point p0frame) {
+//     this->threshold_low = threshold_low;
+//     this->threshold_high = threshold_high;
+//     this->link_lenght = link_lenght;
+//     this->PYLON_WIDTH = PYLON_WIDTH;
+//     this->PYLON_HEIGHT = PYLON_HEIGHT;
+//     this->exposureTime = exposureTime;
+//     this->p0frame = p0frame;
+// }
 
 void VisionClass::setThresholdLow(int threshold_low) {
     this->threshold_low = threshold_low;

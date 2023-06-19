@@ -69,8 +69,8 @@ class VisionClass {
      * @param exposureTime 
      * @param p0frame
      */
-    VisionClass(int threshold_low=115, int threshold_high=255, int link_lenght=40,
-                int PYLON_WIDTH=1920, int PYLON_HEIGHT=1200, float exposureTime=1500, Point p0frame=Point(0,0));
+    // VisionClass(int threshold_low=115, int threshold_high=255, int link_lenght=40,
+    //             int PYLON_WIDTH=1920, int PYLON_HEIGHT=1200, float exposureTime=1500, Point p0frame=Point(0,0));
     ~VisionClass();
 
     /**

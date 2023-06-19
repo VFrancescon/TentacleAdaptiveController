@@ -86,6 +86,25 @@ inline double derivativeAdjustmentF(double d_error){
     return Kd;
 }
 
+/**
+ * @brief Averages an std::vector.
+ *
+ * @tparam T any numerical type.
+ * @param inputVec input vector, size n.
+ * @return double average.
+ */
+template <typename T>
+inline double avgVect(std::vector<T> inputVec)
+{
+    double avg, sum = 0;
+
+    for (auto i : inputVec)
+    {
+        sum += i;
+    }
+    avg = sum / inputVec.size();
+    return avg;
+}
 
 int main(int argc, char* argv[]);
 
