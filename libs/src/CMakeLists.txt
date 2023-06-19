@@ -42,6 +42,5 @@ install(TARGETS AC_Comp DESTINATION lib)
 
 # On Linux, "sudo make install" will typically copy the
 # folder into /usr/local/include
-# install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/libs/PSU_LIB DESTINATION include)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/AC_Vision DESTINATION include)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/AC_Comp DESTINATION include)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/AdaptiveControllerVisionClass DESTINATION include)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/AdaptiveControllerCompClass DESTINATION include)
