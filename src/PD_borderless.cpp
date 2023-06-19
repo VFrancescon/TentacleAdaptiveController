@@ -209,7 +209,6 @@ int main(int argc, char *argv[]) {
     bool firstRun = true;
     bool finished = false;
     int baseline_error;
-    int zero_count;
     int signFlag;
 
     std::cout << "Ready to go. Press enter";

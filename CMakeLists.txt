@@ -85,3 +85,6 @@ target_sources( exportCentreLine PRIVATE ${CompFuncs} ${CameraFuncs})
 # target_sources( validations PRIVATE ${CameraFuncs} ${CompFuncs})
 # target_sources( testpoints PRIVATE ${CameraFuncs})
 # target_sources( cl_mockup PRIVATE ${CompFuncs} )
+
+include_directories(libs/include)
+add_subdirectory(libs/src)
