@@ -26,6 +26,7 @@ class VisionClass {
     int PYLON_WIDTH;
     int PYLON_HEIGHT;
     float exposureTime;
+    int JointNumber;
 
     Point p0frame;
     /**
@@ -167,6 +168,57 @@ class VisionClass {
      * @param p0frame 
      */
     void setP0Frame(Point p0frame);
+
+    int getJointNumber();
+
+    /**
+     * @brief Get the Threshold Low object
+     * 
+     * @return int 
+     */
+    int getThresholdLow();
+
+    /**
+     * @brief Get the Threshold High object
+     * 
+     * @return int 
+     */
+    int getThresholdHigh();
+
+    /**
+     * @brief Get the Link Lenght object
+     * 
+     * @return int 
+     */
+    int getLinkLenght();
+
+    /**
+     * @brief Get the Pylon Width object
+     * 
+     * @return int 
+     */
+    int getPylonWidth();
+
+    /**
+     * @brief Get the Pylon Height object
+     * 
+     * @return int 
+     */
+    int getPylonHeight();
+
+    /**
+     * @brief Get the Exposure Time object
+     * 
+     * @return float 
+     */
+    float getExposureTime();
+
+    /**
+     * @brief Get the P0 Frame object
+     * 
+     * @return Point 
+     */
+    Point getP0Frame();
 };
 
 #endif

@@ -3,6 +3,7 @@
 
 #include "AdaptiveControllerCompClass/compClass.hpp"
 #include "AdaptiveControllerVisionClass/visionClass.hpp"
+#include "HCoilMiddlewareLib/HCoilMiddlewareLib.hpp"
 #include <ctime>
 #include <chrono>
 

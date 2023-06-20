@@ -283,3 +283,19 @@ std::vector<cv::Point> VisionClass::equally_spaced_points(
 }
 
 VisionClass::~VisionClass() {}
+
+int VisionClass::getThresholdLow() { return this->threshold_low; }
+
+int VisionClass::getThresholdHigh() { return this->threshold_high; }
+
+int VisionClass::getLinkLenght() { return this->link_lenght; }
+
+int VisionClass::getPylonWidth() { return this->PYLON_WIDTH; }
+
+int VisionClass::getPylonHeight() { return this->PYLON_HEIGHT; }
+
+float VisionClass::getExposureTime() { return this->exposureTime; }
+
+Point VisionClass::getP0Frame() { return this->p0frame; }
+
+int VisionClass::getJointNumber() { return this->JointNumber; }
