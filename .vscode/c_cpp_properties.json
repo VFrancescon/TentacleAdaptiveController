@@ -8,8 +8,10 @@
                 "/opt/pylon/include",
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/extraFunctions",
+                "${workspaceFolder}/libs/include",
                 "/usr/include/opencv4",
-                "/usr/include/python3.8"
+                "/usr/include/python3.8",
+                "/usr/include/opencv4"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

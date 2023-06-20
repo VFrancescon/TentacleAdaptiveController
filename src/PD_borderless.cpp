@@ -2,7 +2,7 @@
 #include "HCoilMiddlewareLib/HCoilMiddlewareLib.hpp"
 
 void drawLegend(Mat &post_img);
-Mat preprocessImg(Mat &post_img);
+Mat preprocessImg(Mat post_img);
 
 int rrows;
 int rcols;
@@ -114,7 +114,6 @@ int main(int argc, char *argv[]) {
      *
      *****************************************************************/
     MiddlewareLayer mid(true);
-
     /**************************************************************
      *
      * PYLON SETUP
@@ -209,7 +208,6 @@ int main(int argc, char *argv[]) {
     bool firstRun = true;
     bool finished = false;
     int baseline_error;
-    int zero_count;
     int signFlag;
 
     std::cout << "Ready to go. Press enter";
@@ -418,7 +416,7 @@ void drawLegend(Mat &post_img) {
 
 }
 
-Mat preprocessImg(Mat &post_img){
+Mat preprocessImg(Mat post_img){
     resize(post_img, post_img, Size(rcols, rrows), INTER_LINEAR);
     Mat post_img_grey, post_img_th;
     Mat post_img_masked = Mat::zeros(Size(rcols, rrows), CV_8UC1);
