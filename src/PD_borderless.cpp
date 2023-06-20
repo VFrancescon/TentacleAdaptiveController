@@ -2,7 +2,7 @@
 #include "HCoilMiddlewareLib/HCoilMiddlewareLib.hpp"
 
 void drawLegend(Mat &post_img);
-Mat preprocessImg(Mat &post_img);
+Mat preprocessImg(Mat post_img);
 
 int rrows;
 int rcols;
@@ -416,7 +416,7 @@ void drawLegend(Mat &post_img) {
 
 }
 
-Mat preprocessImg(Mat &post_img){
+Mat preprocessImg(Mat post_img){
     resize(post_img, post_img, Size(rcols, rrows), INTER_LINEAR);
     Mat post_img_grey, post_img_th;
     Mat post_img_masked = Mat::zeros(Size(rcols, rrows), CV_8UC1);

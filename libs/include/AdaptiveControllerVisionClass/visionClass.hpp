@@ -51,8 +51,7 @@ class VisionClass {
 
     bool euclideanSort(Point lhs, Point rhs);
 
-   public:
-    
+    public:
     /**
      * @brief instantiates a VisionClass object with default parameters
      * 
@@ -127,6 +126,11 @@ class VisionClass {
     std::vector<cv::Point> equally_spaced_points(
         const std::vector<cv::Point> &cntLine, int jointNumber);
 
+
+    void drawLegend(Mat &post_img);
+    Mat preprocessImg(Mat post_img, int rrows, int rcols);
+
+
     /**
      * @brief Set the Threshold Low object
      * 
@@ -169,6 +173,11 @@ class VisionClass {
      */
     void setP0Frame(Point p0frame);
 
+    /**
+     * @brief Get the Joint Number object
+     * 
+     * @return int 
+     */
     int getJointNumber();
 
     /**

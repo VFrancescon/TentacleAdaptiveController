@@ -9,6 +9,7 @@ VisionClass::VisionClass() {
     this->PYLON_HEIGHT = 1200;
     this->exposureTime = 15000.0;
     this->p0frame = Point(0, 0);
+
 }
 
 // VisionClass::VisionClass(int threshold_low, int threshold_high, int link_lenght,
@@ -280,6 +281,45 @@ std::vector<cv::Point> VisionClass::equally_spaced_points(
     }
 
     return joints;
+}
+
+void VisionClass::drawLegend(Mat &post_img) {
+
+    cv::Point TopLeftLegend(0, 390);
+    cv::Point BottomRightLegend(230, 450);
+    cv::Point InnerTopLeftLegend(4, 404);
+    cv::Point InnerBottomRightLegend(196, 446);
+
+    rectangle(post_img, TopLeftLegend, BottomRightLegend, Scalar(0, 0, 0), 4);
+    rectangle(post_img, InnerTopLeftLegend, InnerBottomRightLegend,
+              Scalar(255, 255, 255), 1);
+
+    putText(post_img, "Detected", TopLeftLegend + Point(84, 26),
+            FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 0));
+    putText(post_img, "Desired", TopLeftLegend + Point(84, 52),
+            FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 0));
+    // blue rect. Desired
+    rectangle(post_img, TopLeftLegend + Point(5, 12),
+              TopLeftLegend + Point(80, 22), Scalar(255, 0, 0), FILLED);
+    // red rect. Detected
+    rectangle(post_img, TopLeftLegend + Point(5, 38),
+              TopLeftLegend + Point(80, 48), Scalar(0, 0, 255), FILLED);
+
+
+}
+
+Mat VisionClass::preprocessImg(Mat post_img, int rrows, int rcols){
+    resize(post_img, post_img, Size(rcols, rrows), INTER_LINEAR);
+    Mat post_img_grey, post_img_th;
+    Mat post_img_masked = Mat::zeros(Size(rcols, rrows), CV_8UC1);
+
+    cvtColor(post_img, post_img_grey, COLOR_BGR2GRAY);
+    blur(post_img_grey, post_img_grey, Size(5, 5));
+    threshold(post_img_grey, post_img_th, this->threshold_low, this->threshold_high,
+                THRESH_BINARY_INV);
+    // post_img_th.copyTo(post_img_masked, intr_mask);
+    post_img_th.copyTo(post_img_masked);
+    return post_img_masked;
 }
 
 VisionClass::~VisionClass() {}

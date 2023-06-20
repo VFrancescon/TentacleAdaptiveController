@@ -152,6 +152,25 @@ int main(int argc, char* argv[]){
     rrows = pre_img.rows * 3 / 8;
     rcols = pre_img.cols * 3 / 8;
 
+    /*****************************************************************
+     * Video Output Setup
+     *****************************************************************/
+    std::string angleSTR;
+    for(auto i: DesiredAngles){
+        angleSTR += std::to_string(i) + "_";
+    }
+
+    std::string outputPath = "PD_BORDERLESS_" + date + ".avi";
+
+    while (file_exists(outputPath)) {
+        outputPath += "_1";
+    }
+
+    VideoWriter video_out(outputPath, VideoWriter::fourcc('M', 'J', 'P', 'G'),
+                          10, Size(rcols, rrows));
+    resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
+    intr_mask = viz.IntroducerMask(pre_img);
+
     //6. setup Controller variables
     //7. setup controller classes
     //8. start loop
