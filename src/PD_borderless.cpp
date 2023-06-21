@@ -265,7 +265,7 @@ int main(int argc, char *argv[]) {
         // std::cout << "Desired angles slice size: " << DesiredAngles.size() <<
         // "\n";
 
-        angles = computeAngles(Joints);
+        // angles = computeAngles(Joints);
 
         for (int i = 0; i < idealPoints.size() - 1; i++) {
             // std::cout << " " << i;
@@ -285,8 +285,8 @@ int main(int argc, char *argv[]) {
         drawLegend(post_img);
 
         jointsCached = JointsObserved;
-        std::vector<double> dAngleSlice = std::vector<double>(
-            desiredAngles_.end() - angles.size(), desiredAngles_.end());
+        // std::vector<double> dAngleSlice = std::vector<double>(
+        //     desiredAngles_.end() - angles.size(), desiredAngles_.end());
         // std::vector<double> dAngleSlice = desiredAngles_;
 
         std::vector<double> desiredX, observedX, desiredY, observedY;

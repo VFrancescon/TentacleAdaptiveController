@@ -9,12 +9,12 @@ VisionClass::VisionClass() {
     this->PYLON_HEIGHT = 1200;
     this->exposureTime = 15000.0;
     this->p0frame = Point(0, 0);
-
 }
 
-// VisionClass::VisionClass(int threshold_low, int threshold_high, int link_lenght,
-//                          int PYLON_WIDTH, int PYLON_HEIGHT, float exposureTime,
-//                          Point p0frame) {
+// VisionClass::VisionClass(int threshold_low, int threshold_high, int
+// link_lenght,
+//                          int PYLON_WIDTH, int PYLON_HEIGHT, float
+//                          exposureTime, Point p0frame) {
 //     this->threshold_low = threshold_low;
 //     this->threshold_high = threshold_high;
 //     this->link_lenght = link_lenght;
@@ -67,23 +67,22 @@ Mat VisionClass::IntroducerMask(Mat src) {
     return src_GRAY;
 }
 
-Mat VisionClass::isolatePhantom(Mat src){
+Mat VisionClass::isolatePhantom(Mat src) {
     Mat src_HSV, mask, final_result;
-    resize( src, src, Size(src.cols * 3 / 8, src.rows * 3 / 8) , INTER_LINEAR );
+    resize(src, src, Size(src.cols * 3 / 8, src.rows * 3 / 8), INTER_LINEAR);
     cvtColor(src, src_HSV, COLOR_BGR2HSV);
-    inRange(src_HSV, Scalar(0,99,67), Scalar(255,255,255), mask);
-    
+    inRange(src_HSV, Scalar(0, 99, 67), Scalar(255, 255, 255), mask);
+
     /*delete left-hand artifacts*/
-    Point p1(0,0), p2(0, src.rows), p3(src.cols * 0.15, 0);
+    Point p1(0, 0), p2(0, src.rows), p3(src.cols * 0.15, 0);
     std::vector<Point> lpts = {p1, p2, p3};
 
     Point p4(src.cols, 0), p5(src.cols, src.rows), p6(src.cols * 0.95, 0);
     std::vector<Point> rpts = {p4, p5, p6};
 
-    polylines(mask, lpts, true, Scalar(0,0,0), 125);
-    polylines(mask, rpts, true, Scalar(0,0,0), 120);
-    
-    
+    polylines(mask, lpts, true, Scalar(0, 0, 0), 125);
+    polylines(mask, rpts, true, Scalar(0, 0, 0), 120);
+
     bitwise_and(src, src, final_result, mask);
     return mask;
 }
@@ -214,6 +213,44 @@ std::vector<Point> VisionClass::findJoints(
     return Joints;
 }
 
+std::vector<Point> VisionClass::findJoints(Mat post_img_masked,
+                                           Point baseFrame) {
+    std::vector<Point> Joints;
+    Mat contours_bin;
+    std::vector<std::vector<Point>> contours;
+    std::vector<Vec4i> hierarchy;
+    // find contours, ignore hierarchy
+    findContours(post_img_masked, contours, hierarchy, RETR_LIST,
+                 CHAIN_APPROX_SIMPLE);
+    contours_bin = Mat::zeros(post_img_masked.size(), CV_8UC1);
+
+    // draw contours and fill the open area
+    drawContours(contours_bin, contours, -1, Scalar(255, 255, 255), cv::FILLED,
+                 LINE_8, hierarchy);
+    // empty matrix. Set up to 8-bit 1 channel data. Very important to set up
+    // properly.
+    Mat skeleton =
+        Mat::zeros(post_img_masked.rows, post_img_masked.rows, CV_8U);
+
+    // take the filled contour and thin it using Zhang Suen method. Only works
+    // with 8-bit 1 channel data.
+    ximgproc::thinning(contours_bin, skeleton, 0);
+    findContours(skeleton, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
+
+    std::vector<Point> cntLine;
+    findNonZero(skeleton, cntLine);
+    p0frame = baseFrame;
+    std::sort(cntLine.begin(), cntLine.end(),
+              std::bind(&VisionClass::euclideanSort, this,
+                        std::placeholders::_1, std::placeholders::_2));
+
+    int JointNumber = cntLine.size() / this->link_lenght;
+    if (JointNumber) {
+        Joints = this->equally_spaced_points(cntLine, JointNumber);
+    }
+    return Joints;
+}
+
 std::vector<Point> VisionClass::findCtrLine(
     Mat post_img_masked, std::vector<std::vector<Point>> &contours,
     Point baseFrame) {
@@ -246,8 +283,8 @@ std::vector<Point> VisionClass::findCtrLine(
     findNonZero(skeleton, cntLine);
     p0frame = baseFrame;
     std::sort(cntLine.begin(), cntLine.end(),
-            std::bind(&VisionClass::euclideanSort, this,
-            std::placeholders::_1, std::placeholders::_2));
+              std::bind(&VisionClass::euclideanSort, this,
+                        std::placeholders::_1, std::placeholders::_2));
 
     return cntLine;
 }
@@ -305,7 +342,6 @@ std::vector<cv::Point> VisionClass::equally_spaced_points(
 }
 
 void VisionClass::drawLegend(Mat &post_img) {
-
     cv::Point TopLeftLegend(0, 390);
     cv::Point BottomRightLegend(230, 450);
     cv::Point InnerTopLeftLegend(4, 404);
@@ -325,19 +361,17 @@ void VisionClass::drawLegend(Mat &post_img) {
     // red rect. Detected
     rectangle(post_img, TopLeftLegend + Point(5, 38),
               TopLeftLegend + Point(80, 48), Scalar(0, 0, 255), FILLED);
-
-
 }
 
-Mat VisionClass::preprocessImg(Mat post_img, int rrows, int rcols){
+Mat VisionClass::preprocessImg(Mat post_img, int rrows, int rcols) {
     resize(post_img, post_img, Size(rcols, rrows), INTER_LINEAR);
     Mat post_img_grey, post_img_th;
     Mat post_img_masked = Mat::zeros(Size(rcols, rrows), CV_8UC1);
 
     cvtColor(post_img, post_img_grey, COLOR_BGR2GRAY);
     blur(post_img_grey, post_img_grey, Size(5, 5));
-    threshold(post_img_grey, post_img_th, this->threshold_low, this->threshold_high,
-                THRESH_BINARY_INV);
+    threshold(post_img_grey, post_img_th, this->threshold_low,
+              this->threshold_high, THRESH_BINARY_INV);
     // post_img_th.copyTo(post_img_masked, intr_mask);
     post_img_th.copyTo(post_img_masked);
     return post_img_masked;

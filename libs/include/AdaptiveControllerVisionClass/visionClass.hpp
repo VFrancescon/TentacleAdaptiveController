@@ -108,17 +108,22 @@ class VisionClass {
 
     /**
 
-    * @brief Finds ordered list of joints from a given masked image. Uses Zhang
-    Suen thinning.
-    *
-    * @param post_img_masked Source image, containing isolated catheter only.
-    * @param contours reference to contorus vector, sent for debugging.
-    * @return std::vector<Point> Set of points containing all the detected joint
-    angles. Size n.
-    */
+    /**
+     * @brief Finds ordered list of joints from a given masked image. Uses Zhang
+    Suen thinning. Number of Joints is given as arg, the link_l is computed
+     * 
+     * @param post_img_masked processed image
+     * @param contours contours, really not necessary
+     * @param JointNumber number of joints we're looking for
+     * @param baseFrame base frame of the robot, if known
+     * @return std::vector<Point> 
+     */
     std::vector<Point> findJoints(Mat post_img_masked,
                                   std::vector<std::vector<Point>> &contours,
                                   int JointNumber = 6,
+                                  Point baseFrame = Point(0, 0));
+
+    std::vector<Point> findJoints(Mat post_img_masked,
                                   Point baseFrame = Point(0, 0));
 
     std::vector<Point> findCtrLine(Mat post_img_masked,

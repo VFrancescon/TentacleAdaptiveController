@@ -107,6 +107,16 @@ inline double avgVect(std::vector<T> inputVec)
     return avg;
 }
 
+Mat pylonPtrToMat(Pylon::CGrabResultPtr &ptrGrabResult, Pylon::CImageFormatConverter &formatConverter){
+    const uint8_t *pImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
+    Pylon::CPylonImage pylonImage;
+    formatConverter.Convert(pylonImage, ptrGrabResult);
+    Mat post_img =
+        cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
+                CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
+    return post_img;
+}
+
 int main(int argc, char* argv[]);
 
 #endif // PD_INSERTION

@@ -2,8 +2,7 @@
 
 int rrows;
 int rcols;
-int main(int argc, char* argv[]){
-
+int main(int argc, char *argv[]) {
     /**
      * Get today's date
      */
@@ -20,14 +19,21 @@ int main(int argc, char* argv[]){
     recordPerformance
         << "Step, JointNo, Ex(t), Ey(t), BaselineX, E_Multiplier, Bx, By, Bz\n";
 
-    
     CompClass comp;
     VisionClass viz;
-    
+
     int jointEff = 5;
     int jointNo = jointEff + 1;
     int jointMultiplier = 1;
+    switch (jointMultiplier) {
+        case 2:
+            viz.setLinkLenght(40);
+            break;
 
+        default:
+            viz.setLinkLenght(60);
+            break;
+    }
     // timesteps are equal to joint no
     int timesteps = jointEff;
     Vector3d reconciliationAngles = Vector3d{0, 90, 180};
@@ -53,8 +59,8 @@ int main(int argc, char* argv[]){
         DesiredAngles[4] = 25;
         DesiredAngles[jointEff] = 0;
     }
-    if( argc == 2 || argc == 7) {
-        jointMultiplier = std::stoi(argv[argc-1]);
+    if (argc == 2 || argc == 7) {
+        jointMultiplier = std::stoi(argv[argc - 1]);
     }
     int rightHandBend = 0;
     rightHandBend =
@@ -70,6 +76,7 @@ int main(int argc, char* argv[]){
     Magnetisations[4] = Vector3d(0, 0, -0.003);
     Magnetisations[jointEff] = Vector3d(0, 0, 0);
 
+    // split angles and magnetisations
     std::vector<double> DesiredAnglesSPLIT(jointEff * jointMultiplier);
     std::vector<Vector3d> MagnetisationsSPLIT(jointEff * jointMultiplier);
     if (jointMultiplier > 1) {
@@ -87,36 +94,33 @@ int main(int argc, char* argv[]){
         MagnetisationsSPLIT = Magnetisations;
     }
 
-    std::vector<PosOrientation> iPosVec(jointEff * jointMultiplier + 1);
-    std::vector<Joint> iJoints(jointEff * jointMultiplier + 1);
-    for (int i = 0; i < iPosVec.size(); i++) {
-        iJoints[i].assignPosOri(iPosVec[i]);
-    }
+    // instantiated positions, joints and links
+    // std::vector<PosOrientation> iPosVec(jointEff * jointMultiplier + 1);
+    // std::vector<Joint> iJoints(jointEff * jointMultiplier + 1);
+    // for (int i = 0; i < iPosVec.size(); i++) {
+    //     iJoints[i].assignPosOri(iPosVec[i]);
+    // }
+    // for (int i = 0; i < iJoints.size(); i++) {
+    //     iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT[i] * M_PI / 180, 0);
+    //     iJoints[i].LocMag = MagnetisationsSPLIT[i];
+    // }
+    // // create vector of links for properties
+    // std::vector<Link> iLinks(jointEff * jointMultiplier);
 
-    for (int i = 0; i < iJoints.size(); i++) {
-        iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT[i] * M_PI / 180, 0);
-        iJoints[i].LocMag = MagnetisationsSPLIT[i];
-    }
-    // create vector of links for properties
-    std::vector<Link> iLinks(jointEff * jointMultiplier);
-    comp.adjustStiffness(iLinks, EMultiplier, jointMultiplier);
-    Vector3d field = comp.CalculateField(iLinks, iJoints, iPosVec);
-    field = comp.RotateField(field, reconciliationAngles);
-    field(1) = 0;
-    double bx = field(0);
-    double by = field(1);
-    double bz = field(2);
-    std::cout << "Initial answer:\n" << field << "\n";
+    // // assign stiffness
+    // comp.adjustStiffness(iLinks, EMultiplier, jointMultiplier);
+
     int mid_OPMODE = 1;
     MiddlewareLayer mid(mid_OPMODE);
+    mid.set3DField(0, 0, 0);
 
-    //5. boot up Pylon backend
+    // 5. boot up Pylon backend
     /**************************************************************
      *
      * PYLON SETUP
      *
      *****************************************************************/
-    Mat pre_img, post_img, intr_mask;
+    Mat pre_img, post_img, filtered_tract;
     Pylon::PylonInitialize();
     Pylon::CImageFormatConverter formatConverter;
     formatConverter.OutputPixelFormat = Pylon::PixelType_BGR8packed;
@@ -133,8 +137,10 @@ int main(int argc, char* argv[]){
 
     Size frameSize = Size((int)width.GetValue(), (int)height.GetValue());
     int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
-    width.TrySetValue(viz.getPylonWidth(), Pylon::IntegerValueCorrection_Nearest);
-    height.TrySetValue(viz.getPylonHeight(), Pylon::IntegerValueCorrection_Nearest);
+    width.TrySetValue(viz.getPylonWidth(),
+                      Pylon::IntegerValueCorrection_Nearest);
+    height.TrySetValue(viz.getPylonHeight(),
+                       Pylon::IntegerValueCorrection_Nearest);
     Pylon::CPixelTypeMapper pixelTypeMapper(&pixelFormat);
     Pylon::EPixelType pixelType =
         pixelTypeMapper.GetPylonPixelTypeFromNodeValue(
@@ -143,6 +149,7 @@ int main(int argc, char* argv[]){
     Pylon::CGrabResultPtr ptrGrabResult;
     camera.RetrieveResult(5000, ptrGrabResult,
                           Pylon::TimeoutHandling_ThrowException);
+
     const uint8_t *preImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
     formatConverter.Convert(pylonImage, ptrGrabResult);
     pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
@@ -156,11 +163,11 @@ int main(int argc, char* argv[]){
      * Video Output Setup
      *****************************************************************/
     std::string angleSTR;
-    for(auto i: DesiredAngles){
+    for (auto i : DesiredAngles) {
         angleSTR += std::to_string(i) + "_";
     }
 
-    std::string outputPath = "PD_BORDERLESS_" + date + ".avi";
+    std::string outputPath = "PD_BORDERLESS_" + angleSTR + "_" + date + ".avi";
 
     while (file_exists(outputPath)) {
         outputPath += "_1";
@@ -169,13 +176,13 @@ int main(int argc, char* argv[]){
     VideoWriter video_out(outputPath, VideoWriter::fourcc('M', 'J', 'P', 'G'),
                           10, Size(rcols, rrows));
     resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
-    intr_mask = viz.IntroducerMask(pre_img);
+    // intr_mask = viz.IntroducerMask(pre_img);
 
     int jointsCached = 0;
     int error = 0, prev_xerror = 0, prev_yerror = 0;
     int dx_error = 0, dy_error = 0;
     int step_count = 0;
-    Point p0 = Point{-2000, 2000};
+    Point p0 = Point{rcols / 2, 0};
     bool firstRun = true;
     bool finished = false;
     int baseline_error;
@@ -187,26 +194,99 @@ int main(int argc, char* argv[]){
     auto start = std::chrono::high_resolution_clock::now();
     auto end = std::chrono::high_resolution_clock::now();
     bool controllerActive = true;
-
-    while (camera.IsGrabbing()){
-        //if 2s have expired
+    bool insert = true;
+    while (camera.IsGrabbing()) {
+        // if 2s have expired
         if (std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
-            .count() > 2000) {
-        start = std::chrono::high_resolution_clock::now();
-        controllerActive = !controllerActive;
+                .count() > 2000) {
+            start = std::chrono::high_resolution_clock::now();
+            controllerActive = !controllerActive;
         }
 
         camera.RetrieveResult(5000, ptrGrabResult,
-                        Pylon::TimeoutHandling_ThrowException);
-    
-    
-    } //while camera is grabbing
+                              Pylon::TimeoutHandling_ThrowException);
+        post_img = pylonPtrToMat(ptrGrabResult, formatConverter);
+        post_img = viz.preprocessImg(post_img, rrows, rcols);
+        viz.drawLegend(post_img);
+        std::vector<Point> Joints = viz.findJoints(post_img);
+        int jointsFound = Joints.size();
 
-    
+        if (jointsFound == jointsCached) {
+            std::vector<double> DesiredAnglesSPLIT_slice =
+                std::vector<double>(DesiredAnglesSPLIT.begin(),
+                                    DesiredAnglesSPLIT.begin() + jointsFound);
+            std::vector<Vector3d> MagnetisationsSPLIT_slice =
+                std::vector<Vector3d>(MagnetisationsSPLIT.end() - jointsFound,
+                                      MagnetisationsSPLIT.end());
+
+            std::vector<PosOrientation> iPosVec(jointsFound + 1);
+            std::vector<Joint> iJoints(jointsFound + 1);
+            for (int i = 0; i < iPosVec.size(); i++) {
+                iJoints[i].assignPosOri(iPosVec[i]);
+            }
+
+            for (int i = 0; i < iJoints.size(); i++) {
+                iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT_slice[i] * M_PI / 180, 0);
+                iJoints[i].LocMag = MagnetisationsSPLIT_slice[i];
+            }                
+            std::vector<Link> iLinks(jointsFound);
+            //TODO: Look at this line. p0 will need to calculated somewhat
+            std::vector<Point> idealPoints = viz.computeIdealPoints(p0, DesiredAnglesSPLIT_slice);
+            std::vector<double> desiredX, observedX, desiredY, observedY;
+            for (auto i : idealPoints) {
+                desiredX.push_back(i.x);
+                desiredY.push_back(i.y);
+            }
+            for (auto i : Joints) {
+                observedX.push_back(i.x);
+                observedY.push_back(i.y);
+            }
+            double xError = xwiseError(desiredX, observedX);
+            double yError = ywiseError(desiredY, observedY);
+            dx_error = xError - prev_xerror;
+            dy_error = yError - prev_yerror;
+            prev_xerror = xError;
+            prev_yerror = yError;
+
+
+            // controller happens here
+            if (firstRun) {
+                firstRun = false;
+                comp.adjustStiffness(iLinks, EMultiplier, jointMultiplier);
+                baseline_error = (abs(xError) + yError) / 2;
+                // 3. initial field
+                // 4. baseline error readings
+            }  // if first run of the controller
+            if (controllerActive) {
+                controllerActive = false;
+                double baselineX = ((abs(xError) + yError) / 2) / baseline_error;
+                int xFlag = std::signbit(xError) ? 1 : -1;
+                int yFlag = std::signbit(yError) ? -1 : 1;
+                int signFlag;
+                if (xFlag == -1 && yFlag == 1) {
+                    signFlag = -1;
+                } else
+                    signFlag = xFlag;
+
+                double Kp = 0.5;
+                double Kd = derivativeAdjustmentF(dx_error);
+                
+                if(finished) {
+                    insert = true;
+                    firstRun = true;}
+            
+            }  // if controller is active
+
+        }  // if no new joints found
+
+ 
+
+    }  // while camera is grabbing
+
     video_out.release();
     mid.~MiddlewareLayer();
     camera.StopGrabbing();
     camera.DestroyDevice();
     recordPerformance.close();
-    return 0;   
+    return 0;
 }
