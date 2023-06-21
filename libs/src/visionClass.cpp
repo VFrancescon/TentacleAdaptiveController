@@ -67,6 +67,27 @@ Mat VisionClass::IntroducerMask(Mat src) {
     return src_GRAY;
 }
 
+Mat VisionClass::isolatePhantom(Mat src){
+    Mat src_HSV, mask, final_result;
+    resize( src, src, Size(src.cols * 3 / 8, src.rows * 3 / 8) , INTER_LINEAR );
+    cvtColor(src, src_HSV, COLOR_BGR2HSV);
+    inRange(src_HSV, Scalar(0,99,67), Scalar(255,255,255), mask);
+    
+    /*delete left-hand artifacts*/
+    Point p1(0,0), p2(0, src.rows), p3(src.cols * 0.15, 0);
+    std::vector<Point> lpts = {p1, p2, p3};
+
+    Point p4(src.cols, 0), p5(src.cols, src.rows), p6(src.cols * 0.95, 0);
+    std::vector<Point> rpts = {p4, p5, p6};
+
+    polylines(mask, lpts, true, Scalar(0,0,0), 125);
+    polylines(mask, rpts, true, Scalar(0,0,0), 120);
+    
+    
+    bitwise_and(src, src, final_result, mask);
+    return mask;
+}
+
 bool VisionClass::xWiseSort(Point lhs, Point rhs) { return (lhs.x < rhs.x); }
 
 bool VisionClass::yWiseSort(cv::Point lhs, cv::Point rhs) {

@@ -82,6 +82,8 @@ class VisionClass {
      */
     Mat IntroducerMask(Mat src);
 
+    Mat isolatePhantom(Mat src);
+
     /**
      * @brief Computes angles between a sorted list of joints, obtained from dot
      * product.
