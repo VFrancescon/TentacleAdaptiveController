@@ -215,7 +215,6 @@ int main(int argc, char *argv[]) {
 
     double success_val = 0.2;
     double low_val = 0.35;
-    int rightFlag = (rightFlag ? 1 : -1);
     // define start and end here
     auto start = std::chrono::high_resolution_clock::now();
     auto end = std::chrono::high_resolution_clock::now();

@@ -171,9 +171,42 @@ int main(int argc, char* argv[]){
     resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
     intr_mask = viz.IntroducerMask(pre_img);
 
-    //6. setup Controller variables
-    //7. setup controller classes
-    //8. start loop
+    int jointsCached = 0;
+    int error = 0, prev_xerror = 0, prev_yerror = 0;
+    int dx_error = 0, dy_error = 0;
+    int step_count = 0;
+    Point p0 = Point{-2000, 2000};
+    bool firstRun = true;
+    bool finished = false;
+    int baseline_error;
+    int signFlag;
 
+    std::cout << "Ready to go. Press enter";
+    std::cin.get();
+
+    auto start = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
+    bool controllerActive = true;
+
+    while (camera.IsGrabbing()){
+        //if 2s have expired
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+            .count() > 2000) {
+        start = std::chrono::high_resolution_clock::now();
+        controllerActive = !controllerActive;
+        }
+
+        camera.RetrieveResult(5000, ptrGrabResult,
+                        Pylon::TimeoutHandling_ThrowException);
+    
+    
+    } //while camera is grabbing
+
+    
+    video_out.release();
+    mid.~MiddlewareLayer();
+    camera.StopGrabbing();
+    camera.DestroyDevice();
+    recordPerformance.close();
     return 0;   
 }
