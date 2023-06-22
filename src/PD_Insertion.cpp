@@ -189,38 +189,45 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Ready to go. Press enter";
     std::cin.get();
+    mid.retractIntroducer(10);
 
     auto start = std::chrono::high_resolution_clock::now();
     auto end = std::chrono::high_resolution_clock::now();
     bool controllerActive = true;
-    bool insert = true;
     int jointsFound = 0;
     int jointToSolve = 1;
-    
+
     // while (camera.IsGrabbing()) {
     while (true) {
         // if 2s have expired
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
-                .count() > 1000) {
-            start = std::chrono::high_resolution_clock::now();
-            controllerActive = !controllerActive;
-        }
+        // if (std::chrono::duration_cast<std::chrono::milliseconds>(end -
+        // start)
+        //         .count() > 1000) {
+        //     start = std::chrono::high_resolution_clock::now();
+        //     controllerActive = !controllerActive;
+        // }
         Vector3d field;
         camera.RetrieveResult(5000, ptrGrabResult,
                               Pylon::TimeoutHandling_ThrowException);
-        post_img = pylonPtrToMat(ptrGrabResult, formatConverter);
+        const uint8_t *pImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
+        Pylon::CPylonImage pylonImage;
+        formatConverter.Convert(pylonImage, ptrGrabResult);
+        Mat post_img =
+            cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
+                    CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
         post_img = viz.preprocessImg(post_img, rrows, rcols);
         viz.drawLegend(post_img);
         std::vector<Point> Joints = viz.findJoints(post_img);
-        jointsFound = Joints.size();
+        jointsFound = Joints.size(); //FIND OUT HOW MANY JOINTS
 
         if (jointToSolve == jointsFound) {
             std::vector<double> DesiredAnglesSPLIT_slice =
                 std::vector<double>(DesiredAnglesSPLIT.begin(),
                                     DesiredAnglesSPLIT.begin() + jointsFound);
             std::vector<Vector3d> MagnetisationsSPLIT_slice =
-                std::vector<Vector3d>(MagnetisationsSPLIT.end() - jointsFound-1,
-                                      MagnetisationsSPLIT.end());
+                std::vector<Vector3d>(
+                    MagnetisationsSPLIT.end() - jointsFound - 1,
+                    MagnetisationsSPLIT.end());
 
             DesiredAnglesSPLIT_slice.push_back(0);
 
@@ -231,12 +238,14 @@ int main(int argc, char *argv[]) {
             }
 
             for (int i = 0; i < iJoints.size(); i++) {
-                iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT_slice[i] * M_PI / 180, 0);
+                iJoints[i].q =
+                    Vector3d(0, DesiredAnglesSPLIT_slice[i] * M_PI / 180, 0);
                 iJoints[i].LocMag = MagnetisationsSPLIT_slice[i];
-            }                
+            }
             std::vector<Link> iLinks(jointsFound);
-            //TODO: Look at this line. p0 will need to calculated somewhat
-            std::vector<Point> idealPoints = viz.computeIdealPoints(p0, DesiredAnglesSPLIT_slice);
+            // TODO: Look at this line. p0 will need to calculated somewhat
+            std::vector<Point> idealPoints =
+                viz.computeIdealPoints(p0, DesiredAnglesSPLIT_slice);
             std::vector<double> desiredX, observedX, desiredY, observedY;
             for (auto i : idealPoints) {
                 desiredX.push_back(i.x);
@@ -258,7 +267,7 @@ int main(int argc, char *argv[]) {
             if (firstRun) {
                 firstRun = false;
                 comp.adjustStiffness(iLinks, EMultiplier, jointMultiplier);
-                field = comp.CalculateField(iLinks, iJoints,iPosVec);
+                field = comp.CalculateField(iLinks, iJoints, iPosVec);
                 float bx = field[0];
                 float by = field[1];
                 float bz = field[2];
@@ -266,9 +275,10 @@ int main(int argc, char *argv[]) {
                 // 3. initial field
                 // 4. baseline error readings
             }  // if first run of the controller
-            if (controllerActive) {
+            // if (controllerActive) {
                 controllerActive = false;
-                double baselineX = ((abs(xError) + yError) / 2) / baseline_error;
+                double baselineX =
+                    ((abs(xError) + yError) / 2) / baseline_error;
                 int xFlag = std::signbit(xError) ? 1 : -1;
                 int yFlag = std::signbit(yError) ? -1 : 1;
                 int signFlag;
@@ -280,26 +290,27 @@ int main(int argc, char *argv[]) {
 
                 double Kp = 0.5;
                 double Kd = derivativeAdjustmentF(dx_error);
-                
 
                 if (baselineX < 0.1) {
                     finished = true;
-                continue;
+                    continue;
                 } else if (baselineX > 0.1 && baselineX < 0.4) {
                     std::cout << "Adjusting field from\n" << field << "\n";
                     field += (Kp * Kd) * signFlag * rightHandBend * field;
                     std::cout << "To\n" << field << "\n";
                 } else {
                     std::cout << "Adjusting Emultiplier from " << EMultiplier
-                            << " to ";
-                    EMultiplier += (Kd) * jointMultiplier * signFlag * rightHandBend;
+                              << " to ";
+                    EMultiplier +=
+                        (Kd)*jointMultiplier * signFlag * rightHandBend;
                     std::cout << EMultiplier << "\n";
                     comp.adjustStiffness(iLinks, EMultiplier);
-                    field =
-                        comp.CalculateField(iLinks, iJoints, iPosVec) * rightHandBend;
+                    field = comp.CalculateField(iLinks, iJoints, iPosVec) *
+                            rightHandBend;
                     field = comp.RotateField(field, reconciliationAngles);
                 }
-                if (abs(field(0)) > 20 && abs(field(2)) > 15 && abs(field(1)) > 20)
+                if (abs(field(0)) > 20 && abs(field(2)) > 15 &&
+                    abs(field(1)) > 20)
                     break;
                 if (EMultiplier < 0) {
                     EMultiplier = 0;
@@ -308,27 +319,23 @@ int main(int argc, char *argv[]) {
 
                 mid.set3DField(field);
 
-                if(finished) {
+                if (finished) {
                     firstRun = true;
                     jointToSolve++;
                 }
                 cv::imshow("Post", post_img);
                 video_out.write(post_img);
-                char c = (char)waitKey(1);
+                char c = (char)waitKey(1000);
                 if (c == 27) break;
-                end = std::chrono::high_resolution_clock::now();
-            }  // if controller is active
+            // }  // if controller is active
 
         } else {
-            if(controllerActive) mid.retractIntroducer();
+            mid.retractIntroducer(10);
         }
         cv::imshow("Post", post_img);
         video_out.write(post_img);
         char c = (char)waitKey(1);
         if (c == 27) break;
-        // query the end point of the clock with std::chrono
-        
- 
 
     }  // while camera is grabbing
 

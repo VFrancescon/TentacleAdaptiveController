@@ -52,6 +52,9 @@ class VisionClass {
     bool euclideanSort(Point lhs, Point rhs);
 
     public:
+
+    Mat mask;
+
     /**
      * @brief instantiates a VisionClass object with default parameters
      * 

@@ -68,22 +68,25 @@ Mat VisionClass::IntroducerMask(Mat src) {
 }
 
 Mat VisionClass::isolatePhantom(Mat src) {
-    Mat src_HSV, mask, final_result;
-    resize(src, src, Size(src.cols * 3 / 8, src.rows * 3 / 8), INTER_LINEAR);
-    cvtColor(src, src_HSV, COLOR_BGR2HSV);
-    inRange(src_HSV, Scalar(0, 99, 67), Scalar(255, 255, 255), mask);
+    Mat hsv, mask, element;
+    cvtColor(src, hsv, COLOR_BGR2HSV);
 
-    /*delete left-hand artifacts*/
+    inRange(hsv, Scalar(4, 78, 236), Scalar(255, 255, 255), mask);
+    blur(hsv, hsv, Size(3, 3));
     Point p1(0, 0), p2(0, src.rows), p3(src.cols * 0.15, 0);
     std::vector<Point> lpts = {p1, p2, p3};
 
-    Point p4(src.cols, 0), p5(src.cols, src.rows), p6(src.cols * 0.95, 0);
+    Point p4(src.cols, 0), p5(src.cols, src.rows), p6(src.cols * 0.75, 0);
     std::vector<Point> rpts = {p4, p5, p6};
 
-    polylines(mask, lpts, true, Scalar(0, 0, 0), 125);
-    polylines(mask, rpts, true, Scalar(0, 0, 0), 120);
-
+    Mat final_result;
     bitwise_and(src, src, final_result, mask);
+    element = getStructuringElement(MORPH_DILATE, Size(3, 3));
+    dilate(final_result, final_result,element);
+    
+    polylines(final_result, lpts, true, Scalar(0, 0, 0), 125);
+    polylines(final_result, rpts, true, Scalar(0,0,0), 145);
+    this->mask = mask;
     return mask;
 }
 
@@ -374,7 +377,7 @@ Mat VisionClass::preprocessImg(Mat post_img, int rrows, int rcols) {
     threshold(post_img_grey, post_img_th, this->threshold_low,
               this->threshold_high, THRESH_BINARY_INV);
     // post_img_th.copyTo(post_img_masked, intr_mask);
-    post_img_th.copyTo(post_img_masked);
+    post_img_th.copyTo(post_img_masked, this->mask);
     return post_img_masked;
 }
 
