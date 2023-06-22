@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
             start = std::chrono::high_resolution_clock::now();
             controllerActive = !controllerActive;
         }
-
+        Vector3d field;
         camera.RetrieveResult(5000, ptrGrabResult,
                               Pylon::TimeoutHandling_ThrowException);
         post_img = pylonPtrToMat(ptrGrabResult, formatConverter);
@@ -258,7 +258,7 @@ int main(int argc, char *argv[]) {
             if (firstRun) {
                 firstRun = false;
                 comp.adjustStiffness(iLinks, EMultiplier, jointMultiplier);
-                Vector3d field = comp.CalculateField(iLinks, iJoints,iPosVec);
+                field = comp.CalculateField(iLinks, iJoints,iPosVec);
                 float bx = field[0];
                 float by = field[1];
                 float bz = field[2];
@@ -281,11 +281,42 @@ int main(int argc, char *argv[]) {
                 double Kp = 0.5;
                 double Kd = derivativeAdjustmentF(dx_error);
                 
+
+                if (baselineX < 0.1) {
+                    finished = true;
+                continue;
+                } else if (baselineX > 0.1 && baselineX < 0.4) {
+                    std::cout << "Adjusting field from\n" << field << "\n";
+                    field += (Kp * Kd) * signFlag * rightHandBend * field;
+                    std::cout << "To\n" << field << "\n";
+                } else {
+                    std::cout << "Adjusting Emultiplier from " << EMultiplier
+                            << " to ";
+                    EMultiplier += (Kd) * jointMultiplier * signFlag * rightHandBend;
+                    std::cout << EMultiplier << "\n";
+                    comp.adjustStiffness(iLinks, EMultiplier);
+                    field =
+                        comp.CalculateField(iLinks, iJoints, iPosVec) * rightHandBend;
+                    field = comp.RotateField(field, reconciliationAngles);
+                }
+                if (abs(field(0)) > 20 && abs(field(2)) > 15 && abs(field(1)) > 20)
+                    break;
+                if (EMultiplier < 0) {
+                    EMultiplier = 0;
+                    continue;
+                }
+
+                mid.set3DField(field);
+
                 if(finished) {
                     firstRun = true;
                     jointToSolve++;
                 }
-            
+                cv::imshow("Post", post_img);
+                video_out.write(post_img);
+                char c = (char)waitKey(1);
+                if (c == 27) break;
+                end = std::chrono::high_resolution_clock::now();
             }  // if controller is active
 
         } else {
@@ -296,7 +327,7 @@ int main(int argc, char *argv[]) {
         char c = (char)waitKey(1);
         if (c == 27) break;
         // query the end point of the clock with std::chrono
-        end = std::chrono::high_resolution_clock::now();
+        
  
 
     }  // while camera is grabbing

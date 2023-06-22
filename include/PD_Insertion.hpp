@@ -117,6 +117,28 @@ Mat pylonPtrToMat(Pylon::CGrabResultPtr &ptrGrabResult, Pylon::CImageFormatConve
     return post_img;
 }
 
+void visualizePoints(Mat &post_img, std::vector<Point> idealPoints, std::vector<Point> Joints){
+    for (int i = 0; i < idealPoints.size() - 1; i++) {
+            // std::cout << " " << i;
+            line(post_img, idealPoints[i], idealPoints[i + 1],
+                 Scalar(0, 0, 255), 2);
+            circle(post_img, idealPoints[i], 3, Scalar(0, 255, 0), FILLED);
+            putText(post_img, std::to_string(i), idealPoints[i],
+                    FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
+        }
+        // std::cout << "\n";
+        circle(post_img, idealPoints[idealPoints.size() - 1], 3,
+               Scalar(0, 255, 0), FILLED);
+        putText(post_img, std::to_string(idealPoints.size() - 1),
+                idealPoints[idealPoints.size() - 1], FONT_HERSHEY_SIMPLEX, 1.0,
+                Scalar(255, 0, 0));
+
+    for (auto i : Joints) {
+        circle(post_img, i, 4, Scalar(255, 0, 0), FILLED);
+    }
+}
+
+
 int main(int argc, char* argv[]);
 
 #endif // PD_INSERTION
