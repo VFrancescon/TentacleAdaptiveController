@@ -8,6 +8,7 @@
 #include <pylon/PylonIncludes.h>
 #include <source/AStar.hpp>
 #include <sys/stat.h>
+#include "AdaptiveControllerVisionClass/visionClass.hpp"
 using namespace cv;
 
 int main( int argc, char* argv[]){
@@ -57,14 +58,16 @@ int main( int argc, char* argv[]){
             pixelFormat.GetIntValue());
     camera.StartGrabbing(Pylon::GrabStrategy_LatestImageOnly);
     Pylon::CGrabResultPtr ptrGrabResult;
-
-    while(camera.IsGrabbing()){
+    VisionClass viz;
+    while(camera.IsGrabbing()){ 
         camera.RetrieveResult(5000, ptrGrabResult,
                               Pylon::TimeoutHandling_ThrowException);
         const uint8_t* pImageBuffer = (uint8_t*)ptrGrabResult->GetBuffer();
         formatConverter.Convert(pylonImage, ptrGrabResult);
         frame = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
                         CV_8UC3, (uint8_t*)pylonImage.GetBuffer());
+            int rrows = frame.rows * 3 / 8;
+            int rcols = frame.cols * 3 / 8;
         // cap >> frame;
 
 
@@ -87,9 +90,11 @@ int main( int argc, char* argv[]){
         
         
         bitwise_and(frame, frame, final_result, mask);
+        final_result = viz.preprocessImg(frame, rrows, rcols);
+
         blur(mask, mask, Size(3,3));
-        imshow("Unfiltered", frame);
-        imshow("Mask", mask);
+        imshow("ProcessedImage", final_result);
+        imshow("Raw", frame);
         // imshow("mask", introducer_mask);
         // imshow("mask", introducer_mask);
         char key = (char)waitKey(30);

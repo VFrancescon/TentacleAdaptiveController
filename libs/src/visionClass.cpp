@@ -247,8 +247,9 @@ std::vector<Point> VisionClass::findJoints(Mat post_img_masked,
     int JointNumber = cntLine.size() / this->link_lenght;
     if (JointNumber) {
         Joints = this->equally_spaced_points(cntLine, JointNumber);
-    }
-    return Joints;
+        return Joints;
+    } else return std::vector<Point>(); //an empty list
+    
 }
 
 std::vector<Point> VisionClass::findCtrLine(
