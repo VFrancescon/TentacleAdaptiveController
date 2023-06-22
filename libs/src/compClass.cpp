@@ -325,22 +325,19 @@ Vector3d CompClass::CalculateField(std::vector<Link> &iLinks, std::vector<Joint>
     float density = 1000;
     float v1 = iLinks[0].dL * (M_PI * pow(iLinks[0].d / 2, 2));
     float mass = density * v1;
-    MatrixXd GlobalGrav(6, 1);
-    GlobalGrav << 0, 0, -9.81, 0, 0, 0;
-    GlobalGrav = GlobalGrav * mass;
     int jointEff = (int)iJoints.size();
 
-    MatrixXd StackedGrav = VerticalStack(GlobalGrav, GlobalGrav);
-    for (int i = 2; i < jointEff - 1; i++)
-    {
-        StackedGrav = VerticalStack(StackedGrav, GlobalGrav);
-    }
+    // MatrixXd StackedGrav = VerticalStack(GlobalGrav, GlobalGrav);
+    // for (int i = 2; i < jointEff - 1; i++)
+    // {
+    //     StackedGrav = VerticalStack(StackedGrav, GlobalGrav);
+    // }
     // std::cout << "GlobalGrav\n" << GlobalGrav << "\n";
     // std::cout << "StackedGrav\n" << StackedGrav << "\n";
     // std::cout << "Jointeff: " << jointEff << "\n";
     // std::cout << "Size of Jacobian: " << Jt.rows() << "x" << Jt.cols() << "\n";
     // std::cout << "Size of Vertical Stack: " << StackedGrav.rows() << "x" << StackedGrav.cols() << "\n";
-    MatrixXd GravWrench = Jt * StackedGrav;
+    // MatrixXd GravWrench = Jt * StackedGrav;
     // std::cout << "GravWrench\n" << GravWrench << "\n";
     // std::cout << "Jt\n" << Jt << "\n";
     // MatrixXd LHS = KStacked * AnglesStacked + GravWrench;

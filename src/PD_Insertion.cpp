@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
     int step_count = 0;
     Point p0 = Point{rcols / 2, 0};
     bool firstRun = true;
-    bool finished = false;
+    bool finished = true;
     int baseline_error;
     int signFlag;
 
@@ -260,6 +260,10 @@ int main(int argc, char *argv[]) {
             if (firstRun) {
                 firstRun = false;
                 comp.adjustStiffness(iLinks, EMultiplier, jointMultiplier);
+                Vector3d field = comp.CalculateField(iLinks, iJoints,iPosVec);
+                float bx = field[0];
+                float by = field[1];
+                float bz = field[2];
                 // baseline_error = (abs(xError) + yError) / 2;
                 // 3. initial field
                 // 4. baseline error readings
@@ -270,6 +274,7 @@ int main(int argc, char *argv[]) {
                 // int xFlag = std::signbit(xError) ? 1 : -1;
                 // int yFlag = std::signbit(yError) ? -1 : 1;
                 int signFlag;
+
                 // if (xFlag == -1 && yFlag == 1) {
                 //     signFlag = -1;
                 // } else
