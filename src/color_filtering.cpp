@@ -36,16 +36,16 @@ int main( int argc, char* argv[]){
     width.TrySetValue(PYLON_WIDTH, Pylon::IntegerValueCorrection_Nearest);
     height.TrySetValue(PYLON_HEIGHT, Pylon::IntegerValueCorrection_Nearest);
     Pylon::CFloatParameter(camera.GetNodeMap(), "ExposureTime")
-        .SetValue(20000.0);
+        .SetValue(25000.0);
 
-    Pylon::CFloatParameter(camera.GetNodeMap(), "Saturation")
-        .TrySetValue(0.7, Pylon::FloatValueCorrection_ClipToRange);
+    Pylon::CFloatParameter(camera.GetNodeMap(), "BslSaturation")
+        .TrySetValue(1.5, Pylon::FloatValueCorrection_ClipToRange);
 
-    Pylon::CFloatParameter(camera.GetNodeMap(), "Hue")
-        .TrySetValue(10, Pylon::FloatValueCorrection_ClipToRange);
+    Pylon::CFloatParameter(camera.GetNodeMap(), "BslHue")
+        .TrySetValue(20, Pylon::FloatValueCorrection_ClipToRange);
 
-    Pylon::CFloatParameter(camera.GetNodeMap(), "Contrast")
-        .TrySetValue(0.4, Pylon::FloatValueCorrection_ClipToRange);
+    Pylon::CFloatParameter(camera.GetNodeMap(), "BslContrast")
+        .TrySetValue(0.5, Pylon::FloatValueCorrection_ClipToRange);
 
     // Pylon::CEnumParameter(camera.GetNodeMap(), "BslLightSourcePreset")
     //     .TrySetValue("FactoryLED6000K");

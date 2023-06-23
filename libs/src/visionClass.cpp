@@ -84,8 +84,12 @@ Mat VisionClass::isolatePhantom(Mat src) {
     element = getStructuringElement(MORPH_DILATE, Size(3, 3));
     dilate(final_result, final_result,element);
     
-    polylines(final_result, lpts, true, Scalar(0, 0, 0), 125);
-    polylines(final_result, rpts, true, Scalar(0,0,0), 145);
+    rectangle(mask, Point(0,0), Point(mask.cols, mask.rows * 0.3), 1, FILLED);
+
+
+
+    polylines(mask, lpts, true, Scalar(0, 0, 0), 125);
+    polylines(mask, rpts, true, Scalar(0,0,0), 145);
     this->mask = mask;
     return mask;
 }
@@ -376,8 +380,9 @@ Mat VisionClass::preprocessImg(Mat post_img, int rrows, int rcols) {
     blur(post_img_grey, post_img_grey, Size(5, 5));
     threshold(post_img_grey, post_img_th, this->threshold_low,
               this->threshold_high, THRESH_BINARY_INV);
-    // post_img_th.copyTo(post_img_masked, intr_mask);
-    post_img_th.copyTo(post_img_masked, this->mask);
+    // post_img_th.copyTo(post_img_masked);
+    bitwise_and(post_img_th, post_img_th, post_img_masked, this->mask);
+
     return post_img_masked;
 }
 

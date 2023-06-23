@@ -4,7 +4,7 @@
 using namespace cv;
 
 int main(int argc, char* argv[]){
-    Mat src = imread("/home/vittorio/TentacleAdaptiveController/WORKING_IMAGE.png", IMREAD_COLOR);
+    Mat src = imread("/home/vittorio/TentacleAdaptiveController/dayofimg.png", IMREAD_COLOR);
     VisionClass viz;
 
     Mat hsv, mask, element;
@@ -22,7 +22,8 @@ int main(int argc, char* argv[]){
     bitwise_and(src, src, final_result, mask);
     element = getStructuringElement(MORPH_DILATE, Size(3, 3));
     dilate(final_result, final_result,element);
-    
+    rectangle(final_result, Point(0,0), Point(final_result.cols, final_result.rows * 0.3), 1, FILLED);
+
     polylines(final_result, lpts, true, Scalar(0, 0, 0), 125);
     polylines(final_result, rpts, true, Scalar(0,0,0), 145);
     

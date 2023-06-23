@@ -21,10 +21,10 @@ int main(int argc, char *argv[]) {
 
     CompClass comp;
     VisionClass viz;
-
+    viz.setThresholdLow(170);
     int jointEff = 5;
     int jointNo = jointEff + 1;
-    int jointMultiplier = 2;
+    int jointMultiplier = 1;
     switch (jointMultiplier) {
         case 2:
             viz.setLinkLenght(40);
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
     }
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{0, 90, 180};
+    Vector3d reconciliationAngles = Vector3d{180, 90, 180};
     double EMultiplier = 5;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
@@ -52,11 +52,11 @@ int main(int argc, char *argv[]) {
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
     } else {
-        DesiredAngles[0] = 15;
-        DesiredAngles[1] = 15;
-        DesiredAngles[2] = 20;
-        DesiredAngles[3] = 20;
-        DesiredAngles[4] = 25;
+        DesiredAngles[0] = 5;
+        DesiredAngles[1] = 5;
+        DesiredAngles[2] = 5;
+        DesiredAngles[3] = 5;
+        DesiredAngles[4] = 5;
         DesiredAngles[jointEff] = 0;
     }
     if (argc == 2 || argc == 7) {
@@ -120,7 +120,6 @@ int main(int argc, char *argv[]) {
     //  * PYLON SETUP
     //  *
     //  *****************************************************************/
-    Mat pre_img, post_img, filtered_tract;
     Pylon::PylonInitialize();
     Pylon::CImageFormatConverter formatConverter;
     formatConverter.OutputPixelFormat = Pylon::PixelType_BGR8packed;
@@ -132,15 +131,21 @@ int main(int argc, char *argv[]) {
     Pylon::CIntegerParameter height(camera.GetNodeMap(), "Height");
     Pylon::CEnumParameter pixelFormat(camera.GetNodeMap(), "PixelFormat");
 
-    Pylon::CFloatParameter(camera.GetNodeMap(), "ExposureTime")
-        .SetValue(20000.0);
-
     Size frameSize = Size((int)width.GetValue(), (int)height.GetValue());
     int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
-    width.TrySetValue(viz.getPylonWidth(),
-                      Pylon::IntegerValueCorrection_Nearest);
-    height.TrySetValue(viz.getPylonHeight(),
-                       Pylon::IntegerValueCorrection_Nearest);
+    width.TrySetValue(1920, Pylon::IntegerValueCorrection_Nearest);
+    height.TrySetValue(1200, Pylon::IntegerValueCorrection_Nearest);
+    Pylon::CFloatParameter(camera.GetNodeMap(), "ExposureTime")
+        .SetValue(25000.0);
+
+    Pylon::CFloatParameter(camera.GetNodeMap(), "BslSaturation")
+        .TrySetValue(1.5, Pylon::FloatValueCorrection_ClipToRange);
+
+    Pylon::CFloatParameter(camera.GetNodeMap(), "BslHue")
+        .TrySetValue(20, Pylon::FloatValueCorrection_ClipToRange);
+
+    Pylon::CFloatParameter(camera.GetNodeMap(), "BslContrast")
+        .TrySetValue(0.5, Pylon::FloatValueCorrection_ClipToRange);
     Pylon::CPixelTypeMapper pixelTypeMapper(&pixelFormat);
     Pylon::EPixelType pixelType =
         pixelTypeMapper.GetPylonPixelTypeFromNodeValue(
@@ -148,9 +153,13 @@ int main(int argc, char *argv[]) {
     camera.StartGrabbing(Pylon::GrabStrategy_LatestImageOnly);
     Pylon::CGrabResultPtr ptrGrabResult;
     camera.RetrieveResult(5000, ptrGrabResult,
-                          Pylon::TimeoutHandling_ThrowException);
-
-    const uint8_t *preImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
+                        Pylon::TimeoutHandling_ThrowException);
+        
+    Mat pre_img;
+    try {const uint8_t *preImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
+    } catch( const Pylon::RuntimeException e){
+        std::cout << e.what() << "\n";
+    }
     formatConverter.Convert(pylonImage, ptrGrabResult);
     pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
                       CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
@@ -158,7 +167,7 @@ int main(int argc, char *argv[]) {
     // resizing the image for faster processing
     rrows = pre_img.rows * 3 / 8;
     rcols = pre_img.cols * 3 / 8;
-
+    
     /*****************************************************************
      * Video Output Setup
      *****************************************************************/
@@ -176,6 +185,7 @@ int main(int argc, char *argv[]) {
     VideoWriter video_out(outputPath, VideoWriter::fourcc('M', 'J', 'P', 'G'),
                           10, Size(rcols, rrows));
     resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
+    Mat phantom_mask = viz.isolatePhantom(pre_img);
     // intr_mask = viz.IntroducerMask(pre_img);
 
     int error = 0, prev_xerror = 0, prev_yerror = 0;
@@ -189,7 +199,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Ready to go. Press enter";
     std::cin.get();
-    mid.retractIntroducer(10);
+    // mid.retractIntroducer(10);
 
     auto start = std::chrono::high_resolution_clock::now();
     auto end = std::chrono::high_resolution_clock::now();
@@ -215,12 +225,15 @@ int main(int argc, char *argv[]) {
         Mat post_img =
             cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
                     CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
+        Mat display_img = post_img;
+        resize(display_img, display_img, Size(rcols, rrows), INTER_LINEAR);
         post_img = viz.preprocessImg(post_img, rrows, rcols);
-        viz.drawLegend(post_img);
+        viz.drawLegend(display_img);
         std::vector<Point> Joints = viz.findJoints(post_img);
         jointsFound = Joints.size(); //FIND OUT HOW MANY JOINTS
+        if(jointsFound) p0 = Joints.at(0);
 
-        if (jointToSolve == jointsFound) {
+        while (jointToSolve == jointsFound) {
             std::vector<double> DesiredAnglesSPLIT_slice =
                 std::vector<double>(DesiredAnglesSPLIT.begin(),
                                     DesiredAnglesSPLIT.begin() + jointsFound);
@@ -229,7 +242,7 @@ int main(int argc, char *argv[]) {
                     MagnetisationsSPLIT.end() - jointsFound - 1,
                     MagnetisationsSPLIT.end());
 
-            DesiredAnglesSPLIT_slice.push_back(0);
+            // DesiredAnglesSPLIT_slice.push_back(0);
 
             std::vector<PosOrientation> iPosVec(jointsFound + 1);
             std::vector<Joint> iJoints(jointsFound + 1);
@@ -255,6 +268,8 @@ int main(int argc, char *argv[]) {
                 observedX.push_back(i.x);
                 observedY.push_back(i.y);
             }
+            visualizePoints(display_img, idealPoints, Joints);
+
             double xError = xwiseError(desiredX, observedX);
             double yError = ywiseError(desiredY, observedY);
             dx_error = xError - prev_xerror;
@@ -323,25 +338,29 @@ int main(int argc, char *argv[]) {
                     firstRun = true;
                     jointToSolve++;
                 }
-                cv::imshow("Post", post_img);
-                video_out.write(post_img);
+                cv::imshow("Post", display_img);
+                video_out.write(display_img);
                 char c = (char)waitKey(1000);
                 if (c == 27) break;
             // }  // if controller is active
 
-        } else {
-            mid.retractIntroducer(10);
         }
-        cv::imshow("Post", post_img);
-        video_out.write(post_img);
-        char c = (char)waitKey(1);
+        if (jointsFound < jointToSolve){
+            mid.retractIntroducer(10);
+        } else jointToSolve = jointsFound;
+        cv::imshow("Post", display_img);
+        cv::imshow("Masked img", post_img);
+        cv::imshow("Mask", viz.mask);
+        video_out.write(display_img);
+        char c = (char)waitKey(0);
         if (c == 27) break;
+        mid.retractIntroducer(10);
+
 
     }  // while camera is grabbing
 
     video_out.release();
     mid.stepIntroducer(mid.stepper_count);
-    mid.~MiddlewareLayer();
     camera.StopGrabbing();
     camera.DestroyDevice();
     recordPerformance.close();
