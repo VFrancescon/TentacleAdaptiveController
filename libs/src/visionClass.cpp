@@ -81,13 +81,16 @@ Mat VisionClass::isolatePhantom(Mat src) {
 
     Mat final_result;
     bitwise_and(src, src, final_result, mask);
-    element = getStructuringElement(MORPH_DILATE, Size(3, 3));
-    dilate(final_result, final_result,element);
-    
-    rectangle(mask, Point(0,0), Point(mask.cols, mask.rows * 0.3), 1, FILLED);
+    // element = getStructuringElement(MORPH_DILATE, Size(3, 3));
+    // dilate(final_result, final_result,element);
+    // rectangle(mask, Point(0,0), Point(mask.cols, mask.rows * 0.3), Scalar(0,0,0), 8, FILLED);
+    Point rp1(0,0), rp2(0, mask.rows * 0.3), rp3(mask.cols, mask.rows * 0.3), rp4(mask.cols, 0);
+    std::vector<Point> rectP = {rp1, rp2, rp3, rp4};
+    std::vector<std::vector<Point>> allShapes;
+    allShapes.push_back(rectP);
 
-
-
+    // fillPoly(mask, rectP, Scalar(0,0,0), 8);
+    fillPoly(mask, allShapes, Scalar(0,0,0), 8, 0, Point());
     polylines(mask, lpts, true, Scalar(0, 0, 0), 125);
     polylines(mask, rpts, true, Scalar(0,0,0), 145);
     this->mask = mask;
