@@ -155,9 +155,9 @@ std::vector<Point> VisionClass::computeIdealPoints(
         double angle = 0;
         for (int k = 0; k < i; k++) angle += desiredAngles_[k];
         int xdiff =
-            (double)(this->link_lenght) * 1.15 * sin(angle * M_PI / 180);
+            (double)(this->link_lenght) * 1.5 * sin(angle * M_PI / 180);
         int ydiff =
-            (double)(this->link_lenght) * 1.15 * cos(angle * M_PI / 180);
+            (double)(this->link_lenght) * 1.5 * cos(angle * M_PI / 180);
         Point pn =
             Point{(int)(ideal[i - 1].x + xdiff), (int)(ideal[i - 1].y + ydiff)};
         ideal.push_back(pn);
