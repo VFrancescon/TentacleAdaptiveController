@@ -13,15 +13,16 @@ int main(int argc, char *argv[]) {
     char date_string[100];
     strftime(date_string, 50, "%d_%m_%y_%H%M%S", curr_tm);
     std::string date(date_string);
-    std::ofstream recordPerformance;
-    recordPerformance.open("../PD_BORDERLESS_Results.csv", std::ios_base::app);
-    recordPerformance << date << "\n";
-    recordPerformance
-        << "Step, JointNo, Ex(t), Ey(t), BaselineX, E_Multiplier, Bx, By, Bz\n";
+    // std::ofstream recordPerformance;
+    // recordPerformance.open("../PD_BORDERLESS_Results.csv", std::ios_base::app);
+    // recordPerformance << date << "\n";
+    // recordPerformance
+    //     << "Step, JointNo, Ex(t), Ey(t), BaselineX, E_Multiplier, Bx, By, Bz\n";
 
     CompClass comp;
     VisionClass viz;
     viz.setThresholdLow(170);
+    viz.setLinkLenght(30);
     int jointEff = 5;
     int jointNo = jointEff + 1;
     int jointMultiplier = 1;
@@ -54,9 +55,9 @@ int main(int argc, char *argv[]) {
     } else {
         DesiredAngles[0] = 5;
         DesiredAngles[1] = 5;
-        DesiredAngles[2] = 5;
-        DesiredAngles[3] = 5;
-        DesiredAngles[4] = 5;
+        DesiredAngles[2] = 15;
+        DesiredAngles[3] = 15;
+        DesiredAngles[4] = 10;
         DesiredAngles[jointEff] = 0;
     }
     if (argc == 2 || argc == 7) {
@@ -153,11 +154,12 @@ int main(int argc, char *argv[]) {
     camera.StartGrabbing(Pylon::GrabStrategy_LatestImageOnly);
     Pylon::CGrabResultPtr ptrGrabResult;
     camera.RetrieveResult(5000, ptrGrabResult,
-                        Pylon::TimeoutHandling_ThrowException);
-        
-    Mat pre_img;
-    try {const uint8_t *preImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
-    } catch( const Pylon::RuntimeException e){
+                          Pylon::TimeoutHandling_ThrowException);
+
+    Mat pre_img, post_img;
+    try {
+        const uint8_t *preImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
+    } catch (const Pylon::RuntimeException e) {
         std::cout << e.what() << "\n";
     }
     formatConverter.Convert(pylonImage, ptrGrabResult);
@@ -167,7 +169,7 @@ int main(int argc, char *argv[]) {
     // resizing the image for faster processing
     rrows = pre_img.rows * 3 / 8;
     rcols = pre_img.cols * 3 / 8;
-    
+
     /*****************************************************************
      * Video Output Setup
      *****************************************************************/
@@ -176,23 +178,21 @@ int main(int argc, char *argv[]) {
         angleSTR += std::to_string(i) + "_";
     }
 
-    std::string outputPath = "PD_BORDERLESS_" + angleSTR + "_" + date + ".avi";
+    std::string outputPath = "PD_INSERTION_" + angleSTR + "_" + date + ".avi";
 
     while (file_exists(outputPath)) {
         outputPath += "_1";
     }
 
-    VideoWriter video_out(outputPath, VideoWriter::fourcc('M', 'J', 'P', 'G'),
-                          10, Size(rcols, rrows));
+    // VideoWriter video_out(outputPath, VideoWriter::fourcc('M', 'J', 'P', 'G'),
+    //                       10, Size(rcols, rrows));
     resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
-    Mat phantom_mask = viz.isolatePhantom(pre_img);
     // intr_mask = viz.IntroducerMask(pre_img);
 
     int error = 0, prev_xerror = 0, prev_yerror = 0;
     int dx_error = 0, dy_error = 0;
     int step_count = 0;
     Point p0 = Point{rcols / 2, 0};
-    bool firstRun = true;
     bool finished = true;
     int baseline_error;
     int signFlag;
@@ -204,165 +204,90 @@ int main(int argc, char *argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
     auto end = std::chrono::high_resolution_clock::now();
     bool controllerActive = true;
-    int jointsFound = 0;
-    int jointToSolve = 1;
+    bool first_run;
+    bool solving_time = false;
 
-    // while (camera.IsGrabbing()) {
-    while (true) {
-        // if 2s have expired
-        // if (std::chrono::duration_cast<std::chrono::milliseconds>(end -
-        // start)
-        //         .count() > 1000) {
-        //     start = std::chrono::high_resolution_clock::now();
-        //     controllerActive = !controllerActive;
-        // }
-        Vector3d field;
+    int joints_found = 0;
+    int joints_to_solve = 1;
+
+    bool initialSetup = true;
+    Mat phantom_mask;
+    while (camera.IsGrabbing()) {
+        // 1. get a phantom mask
         camera.RetrieveResult(5000, ptrGrabResult,
                               Pylon::TimeoutHandling_ThrowException);
         const uint8_t *pImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
-        Pylon::CPylonImage pylonImage;
         formatConverter.Convert(pylonImage, ptrGrabResult);
-        Mat post_img =
-            cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
-                    CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
-        Mat display_img = post_img;
-        resize(display_img, display_img, Size(rcols, rrows), INTER_LINEAR);
-        post_img = viz.preprocessImg(post_img, rrows, rcols);
-        viz.drawLegend(display_img);
-        std::vector<Point> Joints = viz.findJoints(post_img);
-        jointsFound = Joints.size(); //FIND OUT HOW MANY JOINTS
-        if(jointsFound) p0 = Joints.at(0);
 
-        while (jointToSolve == jointsFound) {
-            std::vector<double> DesiredAnglesSPLIT_slice =
-                std::vector<double>(DesiredAnglesSPLIT.begin(),
-                                    DesiredAnglesSPLIT.begin() + jointsFound);
-            std::vector<Vector3d> MagnetisationsSPLIT_slice =
-                std::vector<Vector3d>(
-                    MagnetisationsSPLIT.end() - jointsFound - 1,
+        if (initialSetup) {
+            pre_img =
+                cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
+                        CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
+            if (pre_img.empty()) {
+                break;
+            }
+            resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
+            phantom_mask = viz.isolatePhantom(pre_img);
+            // 2. push 1 joint in.
+            mid.retractIntroducer(10);
+            first_run = true;
+        } else {  // we have established a phantom mask
+
+            Mat grabbedFrame =
+                cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
+                        CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
+            resize(grabbedFrame, grabbedFrame, Size(rcols, rrows),
+                   INTER_LINEAR);
+            Mat processed_frame = viz.preprocessImg(grabbedFrame);
+            std::vector<Point> Joints = viz.findJoints(processed_frame);
+            if (first_run) {
+                viz.setP0Frame(Joints.at(0));
+                first_run = false;
+            }
+            joints_found = Joints.size();
+            solving_time = joints_found == joints_to_solve;
+
+            if (solving_time) {  // run the controller here
+                std::cout << "Controller would run here\n";
+
+                std::vector<double> dAnglesS = std::vector<double>(
+                    DesiredAnglesSPLIT.begin(),
+                    DesiredAnglesSPLIT.begin() + joints_to_solve);
+
+                std::vector<Vector3d> MagS = std::vector<Vector3d>(
+                    MagnetisationsSPLIT.end() - joints_to_solve - 1,
                     MagnetisationsSPLIT.end());
 
-            // DesiredAnglesSPLIT_slice.push_back(0);
+                std::vector<Point> dPoints =
+                    viz.computeIdealPoints(viz.getP0Frame(), dAnglesS);
 
-            std::vector<PosOrientation> iPosVec(jointsFound + 1);
-            std::vector<Joint> iJoints(jointsFound + 1);
-            for (int i = 0; i < iPosVec.size(); i++) {
-                iJoints[i].assignPosOri(iPosVec[i]);
-            }
-
-            for (int i = 0; i < iJoints.size(); i++) {
-                iJoints[i].q =
-                    Vector3d(0, DesiredAnglesSPLIT_slice[i] * M_PI / 180, 0);
-                iJoints[i].LocMag = MagnetisationsSPLIT_slice[i];
-            }
-            std::vector<Link> iLinks(jointsFound);
-            // TODO: Look at this line. p0 will need to calculated somewhat
-            std::vector<Point> idealPoints =
-                viz.computeIdealPoints(p0, DesiredAnglesSPLIT_slice);
-            std::vector<double> desiredX, observedX, desiredY, observedY;
-            for (auto i : idealPoints) {
-                desiredX.push_back(i.x);
-                desiredY.push_back(i.y);
-            }
-            for (auto i : Joints) {
-                observedX.push_back(i.x);
-                observedY.push_back(i.y);
-            }
-            visualizePoints(display_img, idealPoints, Joints);
-
-            double xError = xwiseError(desiredX, observedX);
-            double yError = ywiseError(desiredY, observedY);
-            dx_error = xError - prev_xerror;
-            dy_error = yError - prev_yerror;
-            prev_xerror = xError;
-            prev_yerror = yError;
-            finished = true;
-
-            // controller happens here
-            if (firstRun) {
-                firstRun = false;
-                comp.adjustStiffness(iLinks, EMultiplier, jointMultiplier);
-                field = comp.CalculateField(iLinks, iJoints, iPosVec);
-                float bx = field[0];
-                float by = field[1];
-                float bz = field[2];
-                baseline_error = (abs(xError) + yError) / 2;
-                // 3. initial field
-                // 4. baseline error readings
-            }  // if first run of the controller
-            // if (controllerActive) {
-                controllerActive = false;
-                double baselineX =
-                    ((abs(xError) + yError) / 2) / baseline_error;
-                int xFlag = std::signbit(xError) ? 1 : -1;
-                int yFlag = std::signbit(yError) ? -1 : 1;
-                int signFlag;
-
-                if (xFlag == -1 && yFlag == 1) {
-                    signFlag = -1;
-                } else
-                    signFlag = xFlag;
-
-                double Kp = 0.5;
-                double Kd = derivativeAdjustmentF(dx_error);
-
-                if (baselineX < 0.1) {
-                    finished = true;
-                    continue;
-                } else if (baselineX > 0.1 && baselineX < 0.4) {
-                    std::cout << "Adjusting field from\n" << field << "\n";
-                    field += (Kp * Kd) * signFlag * rightHandBend * field;
-                    std::cout << "To\n" << field << "\n";
-                } else {
-                    std::cout << "Adjusting Emultiplier from " << EMultiplier
-                              << " to ";
-                    EMultiplier +=
-                        (Kd)*jointMultiplier * signFlag * rightHandBend;
-                    std::cout << EMultiplier << "\n";
-                    comp.adjustStiffness(iLinks, EMultiplier);
-                    field = comp.CalculateField(iLinks, iJoints, iPosVec) *
-                            rightHandBend;
-                    field = comp.RotateField(field, reconciliationAngles);
+                for(auto i: Joints) {
+                    circle(grabbedFrame, i, 5, Scalar(0, 0, 255), -1);
                 }
-                if (abs(field(0)) > 20 && abs(field(2)) > 15 &&
-                    abs(field(1)) > 20)
-                    break;
-                if (EMultiplier < 0) {
-                    EMultiplier = 0;
-                    continue;
+                for(auto i: dPoints) {
+                    circle(grabbedFrame, i, 5, Scalar(255, 0, 0), -1);
                 }
 
-                mid.set3DField(field);
+            } else if (joints_found > joints_to_solve) {
+                joints_to_solve++;
+            } else
+                mid.retractIntroducer(10);
 
-                if (finished) {
-                    firstRun = true;
-                    jointToSolve++;
-                }
-                cv::imshow("Post", display_img);
-                video_out.write(display_img);
-                char c = (char)waitKey(1000);
-                if (c == 27) break;
-            // }  // if controller is active
+            imshow("grabbed", grabbedFrame);
+            imshow("processed", processed_frame);
+            imshow("phantom", phantom_mask);
+            waitKey(0);
 
-        }
-        if (jointsFound < jointToSolve){
-            mid.retractIntroducer(10);
-        } else jointToSolve = jointsFound;
-        cv::imshow("Post", display_img);
-        cv::imshow("Masked img", post_img);
-        cv::imshow("Mask", viz.mask);
-        video_out.write(display_img);
-        char c = (char)waitKey(0);
-        if (c == 27) break;
-        mid.retractIntroducer(10);
+        }  // we have established a phantom mask
 
 
     }  // while camera is grabbing
 
-    video_out.release();
+    // video_out.release();
+    std::cout << "retracting by " << mid.stepper_count << " steps\n";
     mid.stepIntroducer(mid.stepper_count);
     camera.StopGrabbing();
     camera.DestroyDevice();
-    recordPerformance.close();
+    // recordPerformance.close();
     return 0;
 }

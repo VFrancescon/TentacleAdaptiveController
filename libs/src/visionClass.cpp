@@ -389,6 +389,19 @@ Mat VisionClass::preprocessImg(Mat post_img, int rrows, int rcols) {
     return post_img_masked;
 }
 
+Mat VisionClass::preprocessImg(Mat post_img) {
+    Mat post_img_grey, post_img_th;
+    Mat post_img_masked;
+
+    cvtColor(post_img, post_img_grey, COLOR_BGR2GRAY);
+    blur(post_img_grey, post_img_grey, Size(5, 5));
+    threshold(post_img_grey, post_img_th, this->threshold_low,
+              this->threshold_high, THRESH_BINARY_INV);
+    // post_img_th.copyTo(post_img_masked);
+    post_img_th.copyTo(post_img_masked, this->mask);
+    return post_img_masked;
+}
+
 VisionClass::~VisionClass() {}
 
 int VisionClass::getThresholdLow() { return this->threshold_low; }

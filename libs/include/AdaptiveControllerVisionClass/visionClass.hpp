@@ -3,8 +3,9 @@
 
 #include <pylon/PylonIncludes.h>
 #include <sys/stat.h>
-#include <functional>
+
 #include <eigen3/Eigen/Core>
+#include <functional>
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
@@ -51,29 +52,30 @@ class VisionClass {
 
     bool euclideanSort(Point lhs, Point rhs);
 
-    public:
-
+   public:
     Mat mask;
 
     /**
      * @brief instantiates a VisionClass object with default parameters
-     * 
+     *
      */
     VisionClass(/* args */);
-    
+
     /**
      * @brief Construct a new Vision Class object with custom parameters
-     * 
-     * @param threshold_low 
-     * @param threshold_high 
-     * @param link_lenght 
-     * @param PYLON_WIDTH 
-     * @param PYLON_HEIGHT 
-     * @param exposureTime 
+     *
+     * @param threshold_low
+     * @param threshold_high
+     * @param link_lenght
+     * @param PYLON_WIDTH
+     * @param PYLON_HEIGHT
+     * @param exposureTime
      * @param p0frame
      */
-    // VisionClass(int threshold_low=115, int threshold_high=255, int link_lenght=40,
-    //             int PYLON_WIDTH=1920, int PYLON_HEIGHT=1200, float exposureTime=1500, Point p0frame=Point(0,0));
+    // VisionClass(int threshold_low=115, int threshold_high=255, int
+    // link_lenght=40,
+    //             int PYLON_WIDTH=1920, int PYLON_HEIGHT=1200, float
+    //             exposureTime=1500, Point p0frame=Point(0,0));
     ~VisionClass();
 
     /**
@@ -114,12 +116,12 @@ class VisionClass {
     /**
      * @brief Finds ordered list of joints from a given masked image. Uses Zhang
     Suen thinning. Number of Joints is given as arg, the link_l is computed
-     * 
+     *
      * @param post_img_masked processed image
      * @param contours contours, really not necessary
      * @param JointNumber number of joints we're looking for
      * @param baseFrame base frame of the robot, if known
-     * @return std::vector<Point> 
+     * @return std::vector<Point>
      */
     std::vector<Point> findJoints(Mat post_img_masked,
                                   std::vector<std::vector<Point>> &contours,
@@ -136,106 +138,125 @@ class VisionClass {
     std::vector<cv::Point> equally_spaced_points(
         const std::vector<cv::Point> &cntLine, int jointNumber);
 
-
     void drawLegend(Mat &post_img);
+
+    /**
+     * @brief Takes in raw image, process and applies mask. Also resizes to
+     * rcols, rrows. Pulls mask from internal class variable
+     *
+     * @param post_img image to process
+     * @param rrows rows to resize to
+     * @param rcols cols to resize to
+     * @return Mat processed image
+     */
     Mat preprocessImg(Mat post_img, int rrows, int rcols);
 
+    /**
+     * @brief Takes in raw image, process and applies mask. Does no resizing.
+     * Handle it manually first. Pulls mask from internal class variable.
+     *
+     * @param post_img image to process
+     * @param rrows rows to resize to
+     * @param rcols cols to resize to
+     * @return Mat processed image
+     */
+    Mat preprocessImg(Mat post_img);
 
     /**
      * @brief Set the Threshold Low object
-     * 
-     * @param threshold_low 
+     *
+     * @param threshold_low
      */
     void setThresholdLow(int threshold_low);
-    
+
     /**
      * @brief Set the Threshold High object
-     * 
-     * @param threshold_high 
+     *
+     * @param threshold_high
      */
     void setThresholdHigh(int threshold_high);
     /**
      * @brief Set the Link Lenght object
-     * 
-     * @param link_lenght 
+     *
+     * @param link_lenght
      */
     void setLinkLenght(int link_lenght);
-    
+
     /**
      * @brief Set the Pylon Dims object
-     * 
-     * @param PYLON_WIDTH 
-     * @param PYLON_HEIGHT 
+     *
+     * @param PYLON_WIDTH
+     * @param PYLON_HEIGHT
      */
     void setPylonDims(int PYLON_WIDTH, int PYLON_HEIGHT);
-    
+
     /**
      * @brief Set the Exposure Time object
-     * 
-     * @param exposureTime 
+     *
+     * @param exposureTime
      */
     void setExposureTime(float exposureTime);
 
     /**
      * @brief Set the P0 Frame object
-     * 
-     * @param p0frame 
+     *
+     * @param p0frame
      */
     void setP0Frame(Point p0frame);
 
     /**
      * @brief Get the Joint Number object
-     * 
-     * @return int 
+     *
+     * @return int
      */
     int getJointNumber();
 
     /**
      * @brief Get the Threshold Low object
-     * 
-     * @return int 
+     *
+     * @return int
      */
     int getThresholdLow();
 
     /**
      * @brief Get the Threshold High object
-     * 
-     * @return int 
+     *
+     * @return int
      */
     int getThresholdHigh();
 
     /**
      * @brief Get the Link Lenght object
-     * 
-     * @return int 
+     *
+     * @return int
      */
     int getLinkLenght();
 
     /**
      * @brief Get the Pylon Width object
-     * 
-     * @return int 
+     *
+     * @return int
      */
     int getPylonWidth();
 
     /**
      * @brief Get the Pylon Height object
-     * 
-     * @return int 
+     *
+     * @return int
      */
     int getPylonHeight();
 
     /**
      * @brief Get the Exposure Time object
-     * 
-     * @return float 
+     *
+     * @return float
      */
     float getExposureTime();
 
     /**
      * @brief Get the P0 Frame object
-     * 
-     * @return Point 
+     *
+     * @return Point
      */
     Point getP0Frame();
 };
