@@ -23,9 +23,16 @@ int main(int argc, char* argv[]) {
     Mat disp;
     inserted_src_backup.copyTo(disp, isolatedPhantom);
     
+    std::vector<Point> joints = viz.findJoints(disp);
+
+    for(auto i: joints){
+        circle(inserted_src, i, 5, Scalar(255, 0, 0), -1);
+    }
+
     imshow("inserted", inserted_src_backup);
     imshow("isolated", isolatedPhantom);
     imshow("disp", disp);
+    imshow("inserted_src", inserted_src);
     waitKey(0);
 
     return 0;
