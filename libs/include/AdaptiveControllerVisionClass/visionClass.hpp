@@ -24,6 +24,8 @@ class VisionClass {
     int threshold_high;
     int link_lenght;
 
+    int h_low = 0, s_low = 255, v_low = 162;
+
     int PYLON_WIDTH;
     int PYLON_HEIGHT;
     float exposureTime;
@@ -161,6 +163,15 @@ class VisionClass {
      * @return Mat processed image
      */
     Mat preprocessImg(Mat post_img);
+
+    /**
+     * @brief Set the Hsv Low object
+     * 
+     * @param h_low 
+     * @param s_low 
+     * @param v_low 
+     */
+    void setHsvLow(int h_low, int s_low, int v_low);
 
     /**
      * @brief Set the Threshold Low object

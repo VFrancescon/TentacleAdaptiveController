@@ -14,15 +14,16 @@ int main(int argc, char *argv[]) {
     strftime(date_string, 50, "%d_%m_%y_%H%M%S", curr_tm);
     std::string date(date_string);
     // std::ofstream recordPerformance;
-    // recordPerformance.open("../PD_BORDERLESS_Results.csv", std::ios_base::app);
-    // recordPerformance << date << "\n";
-    // recordPerformance
-    //     << "Step, JointNo, Ex(t), Ey(t), BaselineX, E_Multiplier, Bx, By, Bz\n";
+    // recordPerformance.open("../PD_BORDERLESS_Results.csv",
+    // std::ios_base::app); recordPerformance << date << "\n"; recordPerformance
+    //     << "Step, JointNo, Ex(t), Ey(t), BaselineX, E_Multiplier, Bx, By,
+    //     Bz\n";
 
     CompClass comp;
     VisionClass viz;
     viz.setThresholdLow(170);
     viz.setLinkLenght(30);
+    viz.setHsvLow(0,255,162);
     int jointEff = 5;
     int jointNo = jointEff + 1;
     int jointMultiplier = 1;
@@ -147,6 +148,7 @@ int main(int argc, char *argv[]) {
 
     Pylon::CFloatParameter(camera.GetNodeMap(), "BslContrast")
         .TrySetValue(0.5, Pylon::FloatValueCorrection_ClipToRange);
+
     Pylon::CPixelTypeMapper pixelTypeMapper(&pixelFormat);
     Pylon::EPixelType pixelType =
         pixelTypeMapper.GetPylonPixelTypeFromNodeValue(
@@ -158,17 +160,39 @@ int main(int argc, char *argv[]) {
 
     Mat pre_img, post_img;
     try {
-        const uint8_t *preImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
+        const uint8_t *preImageBuffer =
+            (uint8_t *)ptrGrabResult->GetBuffer();
     } catch (const Pylon::RuntimeException e) {
         std::cout << e.what() << "\n";
     }
     formatConverter.Convert(pylonImage, ptrGrabResult);
     pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
-                      CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
-
-    // resizing the image for faster processing
+                    CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
     rrows = pre_img.rows * 3 / 8;
     rcols = pre_img.cols * 3 / 8;
+    while (true) {
+        Pylon::CGrabResultPtr ptrGrabResult;
+        camera.RetrieveResult(5000, ptrGrabResult,
+                              Pylon::TimeoutHandling_ThrowException);
+        try {
+            const uint8_t *preImageBuffer =
+                (uint8_t *)ptrGrabResult->GetBuffer();
+        } catch (const Pylon::RuntimeException e) {
+            std::cout << e.what() << "\n";
+        }
+        formatConverter.Convert(pylonImage, ptrGrabResult);
+        pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
+                          CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
+        resize(pre_img, pre_img, Size(), 0.5, 0.5);
+        cv::imshow("pre_img", pre_img);
+        char c = (char)cv::waitKey(1);
+        if (c == 27) {
+            break;
+        }
+    }
+    cv::destroyAllWindows();
+    // resizing the image for faster processing
+
 
     /*****************************************************************
      * Video Output Setup
@@ -184,10 +208,9 @@ int main(int argc, char *argv[]) {
         outputPath += "_1";
     }
 
-    // VideoWriter video_out(outputPath, VideoWriter::fourcc('M', 'J', 'P', 'G'),
+    // VideoWriter video_out(outputPath, VideoWriter::fourcc('M', 'J', 'P',
+    // 'G'),
     //                       10, Size(rcols, rrows));
-    resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
-    // intr_mask = viz.IntroducerMask(pre_img);
 
     int error = 0, prev_xerror = 0, prev_yerror = 0;
     int dx_error = 0, dy_error = 0;
@@ -208,7 +231,7 @@ int main(int argc, char *argv[]) {
     bool solving_time = false;
 
     int joints_found = 0;
-    int joints_to_solve = 1;
+    int joints_to_solve = 2;
 
     bool initialSetup = true;
     Mat phantom_mask;
@@ -228,9 +251,14 @@ int main(int argc, char *argv[]) {
             }
             resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
             phantom_mask = viz.isolatePhantom(pre_img);
+            imshow("phantom", phantom_mask);
+            imshow("pre", pre_img);
+            waitKey(0);
+            cv::destroyAllWindows();
             // 2. push 1 joint in.
             mid.retractIntroducer(10);
             first_run = true;
+            initialSetup = false;
         } else {  // we have established a phantom mask
 
             Mat grabbedFrame =
@@ -261,10 +289,10 @@ int main(int argc, char *argv[]) {
                 std::vector<Point> dPoints =
                     viz.computeIdealPoints(viz.getP0Frame(), dAnglesS);
 
-                for(auto i: Joints) {
+                for (auto i : Joints) {
                     circle(grabbedFrame, i, 5, Scalar(0, 0, 255), -1);
                 }
-                for(auto i: dPoints) {
+                for (auto i : dPoints) {
                     circle(grabbedFrame, i, 5, Scalar(255, 0, 0), -1);
                 }
 
@@ -276,10 +304,11 @@ int main(int argc, char *argv[]) {
             imshow("grabbed", grabbedFrame);
             imshow("processed", processed_frame);
             imshow("phantom", phantom_mask);
-            waitKey(0);
-
+            char c = (char)waitKey(0);
+            if (c == 27) {
+                break;
+            }
         }  // we have established a phantom mask
-
 
     }  // while camera is grabbing
 

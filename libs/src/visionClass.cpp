@@ -84,7 +84,7 @@ Mat VisionClass::isolatePhantom(Mat src) {
     // element = getStructuringElement(MORPH_DILATE, Size(3, 3));
     // dilate(final_result, final_result,element);
     // rectangle(mask, Point(0,0), Point(mask.cols, mask.rows * 0.3), Scalar(0,0,0), 8, FILLED);
-    Point rp1(0,0), rp2(0, mask.rows * 0.3), rp3(mask.cols, mask.rows * 0.3), rp4(mask.cols, 0);
+    Point rp1(0,0), rp2(0, mask.rows * 0.1), rp3(mask.cols, mask.rows * 0.1), rp4(mask.cols, 0);
     std::vector<Point> rectP = {rp1, rp2, rp3, rp4};
     std::vector<std::vector<Point>> allShapes;
     allShapes.push_back(rectP);
@@ -419,3 +419,10 @@ float VisionClass::getExposureTime() { return this->exposureTime; }
 Point VisionClass::getP0Frame() { return this->p0frame; }
 
 int VisionClass::getJointNumber() { return this->JointNumber; }
+
+//write out a definition for setHSVlow
+void VisionClass::setHsvLow(int H, int S, int V) {
+    this->h_low = H;
+    this->s_low = S;
+    this->v_low = V;
+}
