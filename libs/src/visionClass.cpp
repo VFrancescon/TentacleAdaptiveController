@@ -71,28 +71,31 @@ Mat VisionClass::isolatePhantom(Mat src) {
     Mat hsv, mask, element;
     cvtColor(src, hsv, COLOR_BGR2HSV);
 
-    inRange(hsv, Scalar(4, 78, 236), Scalar(255, 255, 255), mask);
+    inRange(hsv, Scalar(this->h_low, this->s_low, this->v_low),
+            Scalar(255, 255, 255), mask);
     blur(hsv, hsv, Size(3, 3));
     Point p1(0, 0), p2(0, src.rows), p3(src.cols * 0.15, 0);
     std::vector<Point> lpts = {p1, p2, p3};
 
-    Point p4(src.cols, 0), p5(src.cols, src.rows), p6(src.cols * 0.75, 0);
+    Point p4(src.cols, 0), p5(src.cols, src.rows), p6(src.cols * 0.8, 0);
     std::vector<Point> rpts = {p4, p5, p6};
 
     Mat final_result;
     bitwise_and(src, src, final_result, mask);
     // element = getStructuringElement(MORPH_DILATE, Size(3, 3));
     // dilate(final_result, final_result,element);
-    // rectangle(mask, Point(0,0), Point(mask.cols, mask.rows * 0.3), Scalar(0,0,0), 8, FILLED);
-    Point rp1(0,0), rp2(0, mask.rows * 0.1), rp3(mask.cols, mask.rows * 0.1), rp4(mask.cols, 0);
+    // rectangle(mask, Point(0,0), Point(mask.cols, mask.rows * 0.3),
+    // Scalar(0,0,0), 8, FILLED);
+    Point rp1(0, 0), rp2(0, mask.rows * this->rect_h), rp3(mask.cols, mask.rows * this->rect_h),
+        rp4(mask.cols, 0);
     std::vector<Point> rectP = {rp1, rp2, rp3, rp4};
     std::vector<std::vector<Point>> allShapes;
     allShapes.push_back(rectP);
 
     // fillPoly(mask, rectP, Scalar(0,0,0), 8);
-    fillPoly(mask, allShapes, Scalar(0,0,0), 8, 0, Point());
+    fillPoly(mask, allShapes, Scalar(0, 0, 0), 8, 0, Point());
     polylines(mask, lpts, true, Scalar(0, 0, 0), 125);
-    polylines(mask, rpts, true, Scalar(0,0,0), 145);
+    polylines(mask, rpts, true, Scalar(0, 0, 0), 135);
     this->mask = mask;
     return mask;
 }
@@ -154,10 +157,8 @@ std::vector<Point> VisionClass::computeIdealPoints(
     for (int i = 1; i < desiredAngles_.size(); i++) {
         double angle = 0;
         for (int k = 0; k < i; k++) angle += desiredAngles_[k];
-        int xdiff =
-            (double)(this->link_lenght) * 1.5 * sin(angle * M_PI / 180);
-        int ydiff =
-            (double)(this->link_lenght) * 1.5 * cos(angle * M_PI / 180);
+        int xdiff = (double)(this->link_lenght) * 1.5 * sin(angle * M_PI / 180);
+        int ydiff = (double)(this->link_lenght) * 1.5 * cos(angle * M_PI / 180);
         Point pn =
             Point{(int)(ideal[i - 1].x + xdiff), (int)(ideal[i - 1].y + ydiff)};
         ideal.push_back(pn);
@@ -258,8 +259,8 @@ std::vector<Point> VisionClass::findJoints(Mat post_img_masked,
     if (JointNumber) {
         Joints = this->equally_spaced_points(cntLine, JointNumber);
         return Joints;
-    } else return std::vector<Point>(); //an empty list
-    
+    } else
+        return std::vector<Point>();  // an empty list
 }
 
 std::vector<Point> VisionClass::findCtrLine(
@@ -420,9 +421,11 @@ Point VisionClass::getP0Frame() { return this->p0frame; }
 
 int VisionClass::getJointNumber() { return this->JointNumber; }
 
-//write out a definition for setHSVlow
+// write out a definition for setHSVlow
 void VisionClass::setHsvLow(int H, int S, int V) {
     this->h_low = H;
     this->s_low = S;
     this->v_low = V;
 }
+
+void VisionClass::setRectW(float rectW) { this->rect_h = rectW; }

@@ -2,7 +2,15 @@
 
 int rrows;
 int rcols;
+
+const std::string rawFrame = "Raw Frame";
+const std::string phantom = "Phantom";
+const std::string processed = "Processed";
+
 int main(int argc, char *argv[]) {
+    namedWindow(rawFrame);
+    namedWindow(phantom);
+    namedWindow(processed);
     /**
      * Get today's date
      */
@@ -21,7 +29,7 @@ int main(int argc, char *argv[]) {
 
     CompClass comp;
     VisionClass viz;
-    viz.setThresholdLow(170);
+    viz.setThresholdLow(80);
     viz.setLinkLenght(30);
     viz.setHsvLow(0,255,162);
     int jointEff = 5;
@@ -183,14 +191,14 @@ int main(int argc, char *argv[]) {
         formatConverter.Convert(pylonImage, ptrGrabResult);
         pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
                           CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
-        resize(pre_img, pre_img, Size(), 0.5, 0.5);
-        cv::imshow("pre_img", pre_img);
+        resize(pre_img, pre_img, Size(), 0.375, 0.375);
+        cv::imshow(rawFrame, pre_img);
         char c = (char)cv::waitKey(1);
         if (c == 27) {
             break;
         }
     }
-    cv::destroyAllWindows();
+    // cv::destroyAllWindows();
     // resizing the image for faster processing
 
 
@@ -251,10 +259,14 @@ int main(int argc, char *argv[]) {
             }
             resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
             phantom_mask = viz.isolatePhantom(pre_img);
-            imshow("phantom", phantom_mask);
-            imshow("pre", pre_img);
-            waitKey(0);
-            cv::destroyAllWindows();
+            imshow(phantom, phantom_mask);
+            imshow(rawFrame, pre_img);
+            char key = (char) waitKey(0);
+            if(key == 27) {
+                break;
+            }
+            // cv::destroyAllWindows();
+            
             // 2. push 1 joint in.
             mid.retractIntroducer(10);
             first_run = true;
@@ -268,7 +280,7 @@ int main(int argc, char *argv[]) {
                    INTER_LINEAR);
             Mat processed_frame = viz.preprocessImg(grabbedFrame);
             std::vector<Point> Joints = viz.findJoints(processed_frame);
-            if (first_run) {
+            if (first_run && joints_found != 0) {
                 viz.setP0Frame(Joints.at(0));
                 first_run = false;
             }
@@ -301,9 +313,9 @@ int main(int argc, char *argv[]) {
             } else
                 mid.retractIntroducer(10);
 
-            imshow("grabbed", grabbedFrame);
-            imshow("processed", processed_frame);
-            imshow("phantom", phantom_mask);
+            imshow(rawFrame, grabbedFrame);
+            imshow(processed, processed_frame);
+            imshow(phantom, phantom_mask);
             char c = (char)waitKey(0);
             if (c == 27) {
                 break;

@@ -100,19 +100,8 @@ int main(int argc, char* argv[]) {
         }
         resize(frame, frame, Size(frame.cols * 3 / 8, frame.rows * 3 / 8),
                INTER_LINEAR);
-        cvtColor(frame, frame_HSV, COLOR_BGR2HSV);
-        inRange(frame_HSV, Scalar(h_slider, s_slider, v_slider), Scalar(255, 255, 255), mask);
-
-        /*delete left-hand artifacts*/
-        Point p1(0, 0), p2(0, frame.rows), p3(frame.cols * 0.15, 0);
-        std::vector<Point> lpts = {p1, p2, p3};
-
-        Point p4(frame.cols, 0), p5(frame.cols, frame.rows),
-            p6(frame.cols * 0.95, 0);
-        std::vector<Point> rpts = {p4, p5, p6};
-
-        polylines(mask, lpts, true, Scalar(0, 0, 0), 125);
-        polylines(mask, rpts, true, Scalar(0, 0, 0), 120);
+        viz.setRectW(0.15);
+        mask = viz.isolatePhantom(frame);
 
         bitwise_and(frame, frame, final_result, mask);
         final_result = viz.preprocessImg(frame, rrows, rcols);

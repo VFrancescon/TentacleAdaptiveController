@@ -25,7 +25,7 @@ class VisionClass {
     int link_lenght;
 
     int h_low = 0, s_low = 255, v_low = 162;
-
+    float rect_h = 0.15;
     int PYLON_WIDTH;
     int PYLON_HEIGHT;
     float exposureTime;
@@ -172,6 +172,13 @@ class VisionClass {
      * @param v_low 
      */
     void setHsvLow(int h_low, int s_low, int v_low);
+
+    /**
+     * @brief Set the Rect W object
+     * 
+     * @param rectW 
+     */
+    void setRectW(float rectW);
 
     /**
      * @brief Set the Threshold Low object
