@@ -45,7 +45,12 @@ void VisionClass::setExposureTime(float exposureTime) {
     this->exposureTime = exposureTime;
 }
 
-void VisionClass::setP0Frame(Point p0frame) { this->p0frame = p0frame; }
+void VisionClass::setP0Frame(Point p0frame) { 
+    std::cout << "Setting p0frame to: " << p0frame << "\n";
+    std::cout << "Currently held p0frame: " << this->p0frame << "\n";
+    this->p0frame = p0frame; 
+    std::cout << "After write. Currently held p0frame: " << this->p0frame << "\n";
+}
 
 Mat VisionClass::IntroducerMask(Mat src) {
     Mat src_GRAY, element;
@@ -157,6 +162,27 @@ std::vector<Point> VisionClass::computeIdealPoints(
     for (int i = 1; i < desiredAngles_.size(); i++) {
         double angle = 0;
         for (int k = 0; k < i; k++) angle += desiredAngles_[k];
+        int xdiff = (double)(this->link_lenght) * 1.8 * sin(angle * M_PI / 180);
+        int ydiff = (double)(this->link_lenght) * 1.8 * cos(angle * M_PI / 180);
+        Point pn =
+            Point{(int)(ideal[i - 1].x + xdiff), (int)(ideal[i - 1].y + ydiff)};
+        ideal.push_back(pn);
+    }
+    // std::cout << " Inside ideal points comp. Points calced:\n";
+    // for(auto i : ideal){
+    //     std::cout << " " << i;
+    // }
+    return ideal;
+}
+
+std::vector<Point> VisionClass::computeIdealPoints(
+    std::vector<double> desiredAngles_) {
+    std::vector<Point> ideal;
+    std::cout << "Using base frame: " << this->p0frame.x << "," << this->p0frame.y << std::endl;
+    ideal.push_back(this->p0frame);
+    for (int i = 1; i < desiredAngles_.size(); i++) {
+        double angle = 0;
+        for (int k = 0; k < i; k++) angle += desiredAngles_[k];
         int xdiff = (double)(this->link_lenght) * 1.5 * sin(angle * M_PI / 180);
         int ydiff = (double)(this->link_lenght) * 1.5 * cos(angle * M_PI / 180);
         Point pn =
@@ -169,6 +195,8 @@ std::vector<Point> VisionClass::computeIdealPoints(
     // }
     return ideal;
 }
+
+
 
 std::vector<Point> VisionClass::findJoints(
     Mat post_img_masked, std::vector<std::vector<Point>> &contours,
@@ -429,3 +457,17 @@ void VisionClass::setHsvLow(int H, int S, int V) {
 }
 
 void VisionClass::setRectW(float rectW) { this->rect_h = rectW; }
+
+void VisionClass::printStatus(void){
+    //print all private class members
+    std::cout << "h_low: " << this->h_low << std::endl;
+    std::cout << "s_low: " << this->s_low << std::endl;
+    std::cout << "v_low: " << this->v_low << std::endl;
+    std::cout << "threshold_low: " << this->threshold_low << std::endl;
+    std::cout << "threshold_high: " << this->threshold_high << std::endl;
+    std::cout << "link_lenght: " << this->link_lenght << std::endl;
+    std::cout << "PYLON_WIDTH: " << this->PYLON_WIDTH << std::endl;
+    std::cout << "PYLON_HEIGHT: " << this->PYLON_HEIGHT << std::endl;
+    std::cout << "exposureTime: " << this->exposureTime << std::endl;
+    std::cout << "p0frame: " << this->p0frame.x << "," << this->p0frame.y << std::endl;
+}

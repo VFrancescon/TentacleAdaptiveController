@@ -20,15 +20,15 @@ using namespace cv;
  */
 class VisionClass {
    private:
-    int threshold_low;
-    int threshold_high;
-    int link_lenght;
+    int threshold_low = 115;
+    int threshold_high = 255;
+    int link_lenght = 30;
 
     int h_low = 0, s_low = 255, v_low = 162;
     float rect_h = 0.15;
-    int PYLON_WIDTH;
-    int PYLON_HEIGHT;
-    float exposureTime;
+    int PYLON_WIDTH = 0;
+    int PYLON_HEIGHT = 0;
+    float exposureTime = 20000;
     int JointNumber;
 
     Point p0frame;
@@ -112,6 +112,17 @@ class VisionClass {
      */
     std::vector<Point> computeIdealPoints(Point p0,
                                           std::vector<double> desiredAngles_);
+
+    //write an overloaded computeIdealPoints declaration that does not take p0 as an argument.
+    /**
+     * @brief Computes the ideal points required to reach the desired joint
+     * angles. DOES NOT TAKE p0. Uses class member instead.
+     *
+     * @param desiredAngles_ Size n-1. Set of desired Joint Angles
+     * @return std::vector<Point> Size n. Outputted set of points that start at
+     * p0 and respect all desired angles.
+     */
+    std::vector<Point> computeIdealPoints(std::vector<double> desiredAngles_);
 
     /**
 
@@ -277,6 +288,12 @@ class VisionClass {
      * @return Point
      */
     Point getP0Frame();
+
+    /**
+     * @brief Prints all the private variables of the class. VERY DEBUG
+     * 
+     */
+    void printStatus();
 };
 
 #endif

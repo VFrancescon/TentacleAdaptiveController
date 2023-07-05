@@ -30,18 +30,18 @@ int main(int argc, char *argv[]) {
     CompClass comp;
     VisionClass viz;
     viz.setThresholdLow(80);
-    viz.setLinkLenght(30);
-    viz.setHsvLow(0,255,162);
+    viz.setLinkLenght(15);
+    viz.setHsvLow(0, 255, 162);
     int jointEff = 5;
     int jointNo = jointEff + 1;
     int jointMultiplier = 1;
     switch (jointMultiplier) {
         case 2:
-            viz.setLinkLenght(40);
+            viz.setLinkLenght(15);
             break;
 
         default:
-            viz.setLinkLenght(60);
+            viz.setLinkLenght(30);
             break;
     }
     // timesteps are equal to joint no
@@ -168,14 +168,13 @@ int main(int argc, char *argv[]) {
 
     Mat pre_img, post_img;
     try {
-        const uint8_t *preImageBuffer =
-            (uint8_t *)ptrGrabResult->GetBuffer();
+        const uint8_t *preImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
     } catch (const Pylon::RuntimeException e) {
         std::cout << e.what() << "\n";
     }
     formatConverter.Convert(pylonImage, ptrGrabResult);
     pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
-                    CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
+                      CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
     rrows = pre_img.rows * 3 / 8;
     rcols = pre_img.cols * 3 / 8;
     while (true) {
@@ -200,7 +199,6 @@ int main(int argc, char *argv[]) {
     }
     // cv::destroyAllWindows();
     // resizing the image for faster processing
-
 
     /*****************************************************************
      * Video Output Setup
@@ -228,8 +226,8 @@ int main(int argc, char *argv[]) {
     int baseline_error;
     int signFlag;
 
-    std::cout << "Ready to go. Press enter";
-    std::cin.get();
+    // std::cout << "Ready to go. Press enter";
+    // std::cin.get();
     // mid.retractIntroducer(10);
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -261,12 +259,12 @@ int main(int argc, char *argv[]) {
             phantom_mask = viz.isolatePhantom(pre_img);
             imshow(phantom, phantom_mask);
             imshow(rawFrame, pre_img);
-            char key = (char) waitKey(0);
-            if(key == 27) {
+            char key = (char)waitKey(0);
+            if (key == 27) {
                 break;
             }
             // cv::destroyAllWindows();
-            
+
             // 2. push 1 joint in.
             mid.retractIntroducer(10);
             first_run = true;
@@ -280,12 +278,17 @@ int main(int argc, char *argv[]) {
                    INTER_LINEAR);
             Mat processed_frame = viz.preprocessImg(grabbedFrame);
             std::vector<Point> Joints = viz.findJoints(processed_frame);
-            if (first_run && joints_found != 0) {
-                viz.setP0Frame(Joints.at(0));
-                first_run = false;
-            }
             joints_found = Joints.size();
             solving_time = joints_found == joints_to_solve;
+            if (first_run && joints_found != 0) {
+                p0 = Joints.at(0);
+                std::cout << "p0 is " << p0.x << "," << p0.y << "\n";                
+                viz.setP0Frame(p0);
+                first_run = false;
+                for(auto i: Joints){
+                    circle(grabbedFrame, i, 5, Scalar(0, 0, 255), -1);
+                }
+            }
 
             if (solving_time) {  // run the controller here
                 std::cout << "Controller would run here\n";
@@ -299,7 +302,7 @@ int main(int argc, char *argv[]) {
                     MagnetisationsSPLIT.end());
 
                 std::vector<Point> dPoints =
-                    viz.computeIdealPoints(viz.getP0Frame(), dAnglesS);
+                    viz.computeIdealPoints(p0, dAnglesS); 
 
                 for (auto i : Joints) {
                     circle(grabbedFrame, i, 5, Scalar(0, 0, 255), -1);
@@ -307,7 +310,7 @@ int main(int argc, char *argv[]) {
                 for (auto i : dPoints) {
                     circle(grabbedFrame, i, 5, Scalar(255, 0, 0), -1);
                 }
-
+                joints_to_solve++;
             } else if (joints_found > joints_to_solve) {
                 joints_to_solve++;
             } else
