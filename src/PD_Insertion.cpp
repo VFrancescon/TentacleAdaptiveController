@@ -3,14 +3,17 @@
 int rrows;
 int rcols;
 
-const std::string rawFrame = "Raw Frame";
-const std::string phantom = "Phantom";
-const std::string processed = "Processed";
+// const std::string rawFrame = "Raw Frame";
+// const std::string phantom = "Phantom";
+// const std::string processed = "Processed";
+
+const std::string fullOutput = "Full Output";
 
 int main(int argc, char *argv[]) {
-    namedWindow(rawFrame);
-    namedWindow(phantom);
-    namedWindow(processed);
+    // namedWindow(rawFrame);
+    // namedWindow(phantom);
+    // namedWindow(processed);
+    namedWindow(fullOutput);
     /**
      * Get today's date
      */
@@ -191,9 +194,9 @@ int main(int argc, char *argv[]) {
         pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
                           CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
         resize(pre_img, pre_img, Size(), 0.375, 0.375);
-        cv::imshow(rawFrame, pre_img);
+        cv::imshow(fullOutput, pre_img);
         char c = (char)cv::waitKey(1);
-        if (c == 27) {
+        if (c == 27 || c == 10) {
             break;
         }
     }
@@ -257,8 +260,10 @@ int main(int argc, char *argv[]) {
             }
             resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
             phantom_mask = viz.isolatePhantom(pre_img);
-            imshow(phantom, phantom_mask);
-            imshow(rawFrame, pre_img);
+            std::vector<Mat> prelimShow = {phantom_mask, pre_img};
+            Mat prelimOut;
+            vconcat(prelimShow, prelimOut);
+            imshow(fullOutput, prelimOut);
             char key = (char)waitKey(0);
             if (key == 27) {
                 break;
@@ -277,22 +282,29 @@ int main(int argc, char *argv[]) {
             resize(grabbedFrame, grabbedFrame, Size(rcols, rrows),
                    INTER_LINEAR);
             Mat processed_frame = viz.preprocessImg(grabbedFrame);
-            std::vector<Point> Joints = viz.findJoints(processed_frame);
+            std::vector<Point> Joints;
+            if (first_run)
+                Joints = viz.findJoints(processed_frame);
+            else
+                Joints = viz.findJoints(processed_frame, p0);
             joints_found = Joints.size();
             solving_time = joints_found == joints_to_solve;
-            if (first_run && joints_found != 0) {
+            if (joints_found != 0) {
                 p0 = Joints.at(0);
-                std::cout << "p0 is " << p0.x << "," << p0.y << "\n";                
+                // std::cout << "p0 is " << p0.x << "," << p0.y << "\n";
                 viz.setP0Frame(p0);
                 first_run = false;
-                for(auto i: Joints){
+                for (auto i : Joints) {
                     circle(grabbedFrame, i, 5, Scalar(0, 0, 255), -1);
                 }
             }
 
             if (solving_time) {  // run the controller here
                 std::cout << "Controller would run here\n";
-
+                /**
+                 * @brief calculating splits and visualising here
+                 * 
+                 */
                 std::vector<double> dAnglesS = std::vector<double>(
                     DesiredAnglesSPLIT.begin(),
                     DesiredAnglesSPLIT.begin() + joints_to_solve);
@@ -302,23 +314,36 @@ int main(int argc, char *argv[]) {
                     MagnetisationsSPLIT.end());
 
                 std::vector<Point> dPoints =
-                    viz.computeIdealPoints(p0, dAnglesS); 
+                    viz.computeIdealPoints(p0, dAnglesS);
 
-                for (auto i : Joints) {
-                    circle(grabbedFrame, i, 5, Scalar(0, 0, 255), -1);
+                // for (auto i : dPoints) {
+                //     circle(grabbedFrame, i, 5, Scalar(255, 0, 0), -1);
+                // }
+                for (int i = 0; i < dPoints.size(); i++) {
+                    // std::cout << " " << i;
+                    line(post_img, dPoints[i], dPoints[i + 1],
+                         Scalar(0, 0, 255), 2);
+                    circle(post_img, dPoints[i], 3, Scalar(0, 255, 0), FILLED);
+                    // putText(post_img, std::to_string(i), dPoints[i],
+                    //         FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
                 }
-                for (auto i : dPoints) {
-                    circle(grabbedFrame, i, 5, Scalar(255, 0, 0), -1);
-                }
+                circle(post_img, dPoints[dPoints.size() - 1], 3,
+                       Scalar(0, 255, 0), FILLED);
                 joints_to_solve++;
             } else if (joints_found > joints_to_solve) {
                 joints_to_solve++;
             } else
                 mid.retractIntroducer(10);
 
-            imshow(rawFrame, grabbedFrame);
-            imshow(processed, processed_frame);
-            imshow(phantom, phantom_mask);
+            // imshow(rawFrame, grabbedFrame);
+            // imshow(processed, processed_frame);
+            // imshow(phantom, phantom_mask);
+            viz.drawLegend(grabbedFrame);
+            std::vector<Mat> outputImgs = {grabbedFrame, processed_frame,
+                                           phantom_mask};
+            Mat output;
+            vconcat(outputImgs, output);
+            imshow("output", output);
             char c = (char)waitKey(0);
             if (c == 27) {
                 break;

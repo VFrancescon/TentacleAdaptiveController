@@ -46,10 +46,10 @@ void VisionClass::setExposureTime(float exposureTime) {
 }
 
 void VisionClass::setP0Frame(Point p0frame) { 
-    std::cout << "Setting p0frame to: " << p0frame << "\n";
-    std::cout << "Currently held p0frame: " << this->p0frame << "\n";
+    // std::cout << "Setting p0frame to: " << p0frame << "\n";
+    // std::cout << "Currently held p0frame: " << this->p0frame << "\n";
     this->p0frame = p0frame; 
-    std::cout << "After write. Currently held p0frame: " << this->p0frame << "\n";
+    // std::cout << "After write. Currently held p0frame: " << this->p0frame << "\n";
 }
 
 Mat VisionClass::IntroducerMask(Mat src) {

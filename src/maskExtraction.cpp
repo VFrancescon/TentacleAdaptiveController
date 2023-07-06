@@ -36,11 +36,14 @@ int main(int argc, char* argv[]) {
     for(auto i: idealPoints){
         circle(inserted_src, i, 5, Scalar(0, 255, 0), -1);
     }
-
+    std::cout << "P0 frame in class: " << viz.getP0Frame() << std::endl;
     // imshow("inserted", inserted_src_backup);
     // imshow("isolated", isolatedPhantom);
     // imshow("disp", disp);
-    imshow("inserted_src", inserted_src);
+    std::vector<Mat> imgs = {inserted_src_backup, isolatedPhantom, disp};
+    Mat final_disp;
+    hconcat(imgs, final_disp);
+    imshow("inserted_src", final_disp);
     waitKey(0);
 
     return 0;
