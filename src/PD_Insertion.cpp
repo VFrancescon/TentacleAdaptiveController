@@ -329,6 +329,21 @@ int main(int argc, char *argv[]) {
                 }
                 circle(post_img, dPoints[dPoints.size() - 1], 3,
                        Scalar(0, 255, 0), FILLED);
+                /**
+                 * @brief calculating splits and visualising here
+                 * 
+                 */
+                
+                /**
+                 * @brief calculate errors here
+                 * 
+                 */
+                
+
+                /**
+                 * @brief and run the controller here
+                 * 
+                 */
                 joints_to_solve++;
             } else if (joints_found > joints_to_solve) {
                 joints_to_solve++;
