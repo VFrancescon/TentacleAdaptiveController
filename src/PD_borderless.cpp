@@ -311,7 +311,7 @@ int main(int argc, char *argv[]) {
         }
         if (controllerActive) {
             controllerActive = !controllerActive;
-            double baselineX = ((abs(xError) + yError) / 2) / baseline_error;
+            double baseline_wrt_X = ((abs(xError) + yError) / 2) / baseline_error;
             int xFlag = std::signbit(xError) ? 1 : -1;
             int yFlag = std::signbit(yError) ? -1 : 1;
             int signFlag;
@@ -328,7 +328,7 @@ int main(int argc, char *argv[]) {
                 recordPerformance
                     << step_count << "," << jointEff * jointMultiplier << ","
                     << xError << "," << yError
-                    << "," << baselineX << "," << EMultiplier << "," << field(0)
+                    << "," << baseline_wrt_X << "," << EMultiplier << "," << field(0)
                     << "," << field(1) << "," << field(2) << "\n";
                 cv::imshow("Post", post_img);
                 video_out.write(post_img);
@@ -338,10 +338,10 @@ int main(int argc, char *argv[]) {
                 else
                     continue;
             }
-            if (baselineX < 0.1) {
+            if (baseline_wrt_X < 0.1) {
                 finished = true;
                 continue;
-            } else if (baselineX > 0.1 && baselineX < 0.4) {
+            } else if (baseline_wrt_X > 0.1 && baseline_wrt_X < 0.4) {
                 std::cout << "Adjusting field from\n" << field << "\n";
                 field += (Kp * Kd) * signFlag * rightHandBend * field;
                 std::cout << "To\n" << field << "\n";
@@ -375,7 +375,7 @@ int main(int argc, char *argv[]) {
                 recordPerformance
                     << step_count << "," << jointEff * jointMultiplier << ","
                     << xError << "," << yError
-                    << "," << baselineX << "," << EMultiplier << "," << field(0)
+                    << "," << baseline_wrt_X << "," << EMultiplier << "," << field(0)
                     << "," << field(1) << "," << field(2) << "\n";
         }
         cv::imshow("Post", post_img);

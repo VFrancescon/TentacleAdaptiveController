@@ -122,7 +122,8 @@ int main(int argc, char *argv[]) {
 
     int mid_OPMODE = 1;
     MiddlewareLayer mid(mid_OPMODE);
-    mid.set3DField(0, 0, 0);
+    Vector3d field = Vector3d(0, 0, 0);
+    mid.set3DField(field);
 
     // // 5. boot up Pylon backend
     // /**************************************************************
@@ -233,6 +234,7 @@ int main(int argc, char *argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
     auto end = std::chrono::high_resolution_clock::now();
     bool controllerActive = true;
+    bool settingUpController = true;
     bool first_run;
     bool solving_time = false;
 
@@ -278,9 +280,9 @@ int main(int argc, char *argv[]) {
                    INTER_LINEAR);
             Mat processed_frame = viz.preprocessImg(grabbedFrame);
             std::vector<Point> Joints;
-            if (first_run)
+            if (first_run) {
                 Joints = viz.findJoints(processed_frame);
-            else
+            } else
                 Joints = viz.findJoints(processed_frame, p0);
             joints_found = Joints.size();
             solving_time = joints_found == joints_to_solve;
@@ -292,58 +294,114 @@ int main(int argc, char *argv[]) {
                 for (auto i : Joints) {
                     circle(grabbedFrame, i, 5, Scalar(255, 0, 0), -1);
                 }
+                std::vector<Link> iLinks(joints_found);
             }
 
             if (solving_time) {  // run the controller here
                 std::cout << "Controller would run here\n";
                 /**
                  * @brief calculating splits and visualising here
-                 * 
+                 *
                  */
                 std::vector<double> dAnglesS = std::vector<double>(
                     DesiredAnglesSPLIT.begin(),
                     DesiredAnglesSPLIT.begin() + joints_to_solve);
 
-                std::vector<Vector3d> MagS = std::vector<Vector3d>(
-                    MagnetisationsSPLIT.end() - joints_to_solve - 1,
-                    MagnetisationsSPLIT.end());
-
                 std::vector<Point> dPoints =
                     viz.computeIdealPoints(p0, dAnglesS);
-
-                // for (auto i : dPoints) {
-                //     circle(grabbedFrame, i, 5, Scalar(255, 0, 0), -1);
-                // }
-                for (int i = 0; i < dPoints.size() -1; i++) {
+                for (int i = 0; i < dPoints.size() - 1; i++) {
                     // std::cout << " " << i;
                     line(grabbedFrame, dPoints[i], dPoints[i + 1],
                          Scalar(0, 0, 255), 2);
-                    circle(grabbedFrame, dPoints[i], 3, Scalar(0, 0, 255), FILLED);
+                    circle(grabbedFrame, dPoints[i], 3, Scalar(0, 0, 255),
+                           FILLED);
                     // putText(post_img, std::to_string(i), dPoints[i],
                     //         FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
                 }
                 circle(grabbedFrame, dPoints[dPoints.size() - 1], 3,
                        Scalar(0, 255, 0), FILLED);
-                /**
-                 * @brief calculating splits and visualising here
-                 * 
-                 */
-                
-                /**
-                 * @brief calculate errors here
-                 * 
-                 */
-                
 
                 /**
-                 * @brief and run the controller here
-                 * 
+                 * @brief calculate errors here
+                 *
                  */
-                joints_to_solve++;
+                std::vector<double> desiredX, observedX, desiredY, observedY;
+                for (auto i : dPoints) {
+                    desiredX.push_back(i.x);
+                    desiredY.push_back(i.y);
+                }
+                for (auto i : Joints) {
+                    observedX.push_back(i.x);
+                    observedY.push_back(i.y);
+                }
+                double xError = xwiseError(desiredX, observedX);
+                double yError = ywiseError(desiredY, observedY);
+                dx_error = xError - prev_xerror;
+                dy_error = yError - prev_yerror;
+                prev_xerror = xError;
+                prev_yerror = yError;
+                double baseline_wrt_X =
+                    ((abs(xError) + yError) / 2) / baseline_error;
+                int xFlag = std::signbit(xError) ? 1 : -1;
+                int yFlag = std::signbit(yError) ? -1 : 1;
+                int signFlag;
+                if (xFlag == -1 && yFlag == 1) {
+                    signFlag = -1;
+                } else
+                    signFlag = xFlag;
+                double Kp = 0.5;
+                double Kd = derivativeAdjustmentF(dx_error);
+
+                std::vector<Vector3d> MagS = std::vector<Vector3d>(
+                    MagnetisationsSPLIT.end() - joints_to_solve - 1,
+                    MagnetisationsSPLIT.end());
+
+                std::vector<Link> iLinks(joints_found);
+                std::vector<PosOrientation> iPosVec(joints_found + 1);
+                std::vector<Joint> iJoints(joints_found + 1);
+                if (settingUpController) {
+                    for (int i = 0; i < iPosVec.size(); i++) {
+                        iJoints[i].assignPosOri(iPosVec[i]);
+                    }
+                    for (int i = 0; i < iJoints.size(); i++) {
+                        iJoints[i].q = Vector3d(0, dAnglesS[i] * M_PI / 180, 0);
+                        iJoints[i].LocMag = MagS[i];
+                    }
+                    comp.adjustStiffness(iLinks, EMultiplier, jointMultiplier);
+                    field = comp.CalculateField(iLinks, iJoints, iPosVec);
+                    field = comp.RotateField(field, reconciliationAngles);
+                    baseline_error = (abs(xError) + yError) / 2;
+                    settingUpController = false;
+                }
+
+                if (baseline_wrt_X < 0.1) {
+                    finished = true;
+                } else if (baseline_wrt_X > 0.1 && baseline_wrt_X < 0.4) {
+                    std::cout << "Adjusting field from\n" << field << "\n";
+                    field += (Kp * Kd) * signFlag * rightHandBend * field;
+                    std::cout << "To\n" << field << "\n";
+                } else {
+                    std::cout << "Adjusting Emultiplier from " << EMultiplier
+                              << " to ";
+                    EMultiplier +=
+                        (Kd)*jointMultiplier * signFlag * rightHandBend;
+                    std::cout << EMultiplier << "\n";
+                    comp.adjustStiffness(iLinks, EMultiplier);
+                    field = comp.CalculateField(iLinks, iJoints, iPosVec) *
+                            rightHandBend;
+                    field = comp.RotateField(field, reconciliationAngles);
+                }
+                mid.set3DField(field);
+
+                if (finished) {
+                    joints_to_solve++;
+                    finished = false;
+                }
             } else if (joints_found > joints_to_solve) {
                 joints_to_solve++;
-            } else
-                mid.retractIntroducer(10);
+            } else{
+                mid.retractIntroducer();        
+            }
 
             // imshow(rawFrame, grabbedFrame);
             // imshow(processed, processed_frame);
