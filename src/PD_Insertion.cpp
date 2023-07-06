@@ -3,17 +3,14 @@
 int rrows;
 int rcols;
 
-// const std::string rawFrame = "Raw Frame";
-// const std::string phantom = "Phantom";
-// const std::string processed = "Processed";
-
-const std::string fullOutput = "Full Output";
+const std::string rawFrame = "Raw Frame";
+const std::string phantom = "Phantom";
+const std::string processed = "Processed";
 
 int main(int argc, char *argv[]) {
-    // namedWindow(rawFrame);
-    // namedWindow(phantom);
-    // namedWindow(processed);
-    namedWindow(fullOutput);
+    namedWindow(rawFrame);
+    namedWindow(phantom);
+    namedWindow(processed);
     /**
      * Get today's date
      */
@@ -65,11 +62,11 @@ int main(int argc, char *argv[]) {
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
     } else {
-        DesiredAngles[0] = 5;
-        DesiredAngles[1] = 5;
-        DesiredAngles[2] = 15;
-        DesiredAngles[3] = 15;
-        DesiredAngles[4] = 10;
+        DesiredAngles[0] = -10;
+        DesiredAngles[1] = 10;
+        DesiredAngles[2] = 20;
+        DesiredAngles[3] = 20;
+        DesiredAngles[4] = 5;
         DesiredAngles[jointEff] = 0;
     }
     if (argc == 2 || argc == 7) {
@@ -194,7 +191,7 @@ int main(int argc, char *argv[]) {
         pre_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
                           CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
         resize(pre_img, pre_img, Size(), 0.375, 0.375);
-        cv::imshow(fullOutput, pre_img);
+        cv::imshow(rawFrame, pre_img);
         char c = (char)cv::waitKey(1);
         if (c == 27 || c == 10) {
             break;
@@ -260,10 +257,8 @@ int main(int argc, char *argv[]) {
             }
             resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
             phantom_mask = viz.isolatePhantom(pre_img);
-            std::vector<Mat> prelimShow = {phantom_mask, pre_img};
-            Mat prelimOut;
-            vconcat(prelimShow, prelimOut);
-            imshow(fullOutput, prelimOut);
+            imshow(phantom, phantom_mask);
+            imshow(rawFrame, pre_img);
             char key = (char)waitKey(0);
             if (key == 27) {
                 break;
@@ -295,7 +290,7 @@ int main(int argc, char *argv[]) {
                 viz.setP0Frame(p0);
                 first_run = false;
                 for (auto i : Joints) {
-                    circle(grabbedFrame, i, 5, Scalar(0, 0, 255), -1);
+                    circle(grabbedFrame, i, 5, Scalar(255, 0, 0), -1);
                 }
             }
 
@@ -319,15 +314,15 @@ int main(int argc, char *argv[]) {
                 // for (auto i : dPoints) {
                 //     circle(grabbedFrame, i, 5, Scalar(255, 0, 0), -1);
                 // }
-                for (int i = 0; i < dPoints.size(); i++) {
+                for (int i = 0; i < dPoints.size() -1; i++) {
                     // std::cout << " " << i;
-                    line(post_img, dPoints[i], dPoints[i + 1],
+                    line(grabbedFrame, dPoints[i], dPoints[i + 1],
                          Scalar(0, 0, 255), 2);
-                    circle(post_img, dPoints[i], 3, Scalar(0, 255, 0), FILLED);
+                    circle(grabbedFrame, dPoints[i], 3, Scalar(0, 0, 255), FILLED);
                     // putText(post_img, std::to_string(i), dPoints[i],
                     //         FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
                 }
-                circle(post_img, dPoints[dPoints.size() - 1], 3,
+                circle(grabbedFrame, dPoints[dPoints.size() - 1], 3,
                        Scalar(0, 255, 0), FILLED);
                 /**
                  * @brief calculating splits and visualising here
@@ -354,11 +349,9 @@ int main(int argc, char *argv[]) {
             // imshow(processed, processed_frame);
             // imshow(phantom, phantom_mask);
             viz.drawLegend(grabbedFrame);
-            std::vector<Mat> outputImgs = {grabbedFrame, processed_frame,
-                                           phantom_mask};
-            Mat output;
-            vconcat(outputImgs, output);
-            imshow("output", output);
+            imshow(rawFrame, grabbedFrame);
+            imshow(processed, processed_frame);
+            imshow(phantom, phantom_mask);
             char c = (char)waitKey(0);
             if (c == 27) {
                 break;
@@ -369,7 +362,7 @@ int main(int argc, char *argv[]) {
 
     // video_out.release();
     std::cout << "retracting by " << mid.stepper_count << " steps\n";
-    mid.stepIntroducer(mid.stepper_count);
+    // mid.stepIntroducer(mid.stepper_count);
     camera.StopGrabbing();
     camera.DestroyDevice();
     // recordPerformance.close();
