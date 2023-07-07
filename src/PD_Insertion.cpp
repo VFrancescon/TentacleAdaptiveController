@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     }
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{180, 90, 180};
+    Vector3d reconciliationAngles = Vector3d{90, 0, 0};
     double EMultiplier = 5;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
@@ -62,11 +62,11 @@ int main(int argc, char *argv[]) {
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
     } else {
-        DesiredAngles[0] = -10;
-        DesiredAngles[1] = 10;
-        DesiredAngles[2] = 20;
-        DesiredAngles[3] = 20;
-        DesiredAngles[4] = 5;
+        DesiredAngles[0] = -20;
+        DesiredAngles[1] = -10;
+        DesiredAngles[2] = -10;
+        DesiredAngles[3] = -5;
+        DesiredAngles[4] = 0;
         DesiredAngles[jointEff] = 0;
     }
     if (argc == 2 || argc == 7) {
@@ -104,20 +104,6 @@ int main(int argc, char *argv[]) {
         MagnetisationsSPLIT = Magnetisations;
     }
 
-    // instantiated positions, joints and links
-    // std::vector<PosOrientation> iPosVec(jointEff * jointMultiplier + 1);
-    // std::vector<Joint> iJoints(jointEff * jointMultiplier + 1);
-    // for (int i = 0; i < iPosVec.size(); i++) {
-    //     iJoints[i].assignPosOri(iPosVec[i]);
-    // }
-    // for (int i = 0; i < iJoints.size(); i++) {
-    //     iJoints[i].q = Vector3d(0, DesiredAnglesSPLIT[i] * M_PI / 180, 0);
-    //     iJoints[i].LocMag = MagnetisationsSPLIT[i];
-    // }
-    // // create vector of links for properties
-    // std::vector<Link> iLinks(jointEff * jointMultiplier);
-
-    // // assign stiffness
     // comp.adjustStiffness(iLinks, EMultiplier, jointMultiplier);
 
     int mid_OPMODE = 1;
@@ -238,11 +224,20 @@ int main(int argc, char *argv[]) {
     bool first_run;
     bool solving_time = false;
 
+    bool got_baseline = false;
+
     int joints_found = 0;
     int joints_to_solve = 2;
 
     bool initialSetup = true;
     Mat phantom_mask;
+
+    std::vector<Link> iLinks;
+    std::vector<PosOrientation> iPosVec;
+    std::vector<Joint> iJoints;
+    float bx = field(0);
+    float by = field(1);
+    float bz = field(2);
     while (camera.IsGrabbing()) {
         // 1. get a phantom mask
         camera.RetrieveResult(5000, ptrGrabResult,
@@ -296,30 +291,28 @@ int main(int argc, char *argv[]) {
                 }
                 std::vector<Link> iLinks(joints_found);
             }
+            /**
+             * @brief calculating splits and visualising here
+             *
+             */
+            std::vector<double> dAnglesS = std::vector<double>(
+                DesiredAnglesSPLIT.begin(),
+                DesiredAnglesSPLIT.begin() + joints_to_solve);
+
+            std::vector<Point> dPoints = viz.computeIdealPoints(p0, dAnglesS);
+            for (int i = 0; i < dPoints.size() - 1; i++) {
+                // std::cout << " " << i;
+                line(grabbedFrame, dPoints[i], dPoints[i + 1],
+                     Scalar(0, 0, 255), 2);
+                circle(grabbedFrame, dPoints[i], 3, Scalar(0, 0, 255), FILLED);
+                // putText(post_img, std::to_string(i), dPoints[i],
+                //         FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
+            }
+            circle(grabbedFrame, dPoints[dPoints.size() - 1], 3,
+                   Scalar(0, 255, 0), FILLED);
 
             if (solving_time) {  // run the controller here
                 std::cout << "Controller would run here\n";
-                /**
-                 * @brief calculating splits and visualising here
-                 *
-                 */
-                std::vector<double> dAnglesS = std::vector<double>(
-                    DesiredAnglesSPLIT.begin(),
-                    DesiredAnglesSPLIT.begin() + joints_to_solve);
-
-                std::vector<Point> dPoints =
-                    viz.computeIdealPoints(p0, dAnglesS);
-                for (int i = 0; i < dPoints.size() - 1; i++) {
-                    // std::cout << " " << i;
-                    line(grabbedFrame, dPoints[i], dPoints[i + 1],
-                         Scalar(0, 0, 255), 2);
-                    circle(grabbedFrame, dPoints[i], 3, Scalar(0, 0, 255),
-                           FILLED);
-                    // putText(post_img, std::to_string(i), dPoints[i],
-                    //         FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
-                }
-                circle(grabbedFrame, dPoints[dPoints.size() - 1], 3,
-                       Scalar(0, 255, 0), FILLED);
 
                 /**
                  * @brief calculate errors here
@@ -340,43 +333,61 @@ int main(int argc, char *argv[]) {
                 dy_error = yError - prev_yerror;
                 prev_xerror = xError;
                 prev_yerror = yError;
+                if (!got_baseline) {
+                    baseline_error = sqrt(pow(xError, 2) + pow(yError, 2));
+                    got_baseline = true;
+                }
                 double baseline_wrt_X =
                     ((abs(xError) + yError) / 2) / baseline_error;
-                int xFlag = std::signbit(xError) ? 1 : -1;
+                int xFlag = std::signbit(xError) ? -1 : 1;
                 int yFlag = std::signbit(yError) ? -1 : 1;
-                int signFlag;
-                if (xFlag == -1 && yFlag == 1) {
-                    signFlag = -1;
-                } else
-                    signFlag = xFlag;
-                double Kp = 0.5;
+                int signFlag = xFlag;
+                
+                double Kp = 0.9;
                 double Kd = derivativeAdjustmentF(dx_error);
 
                 std::vector<Vector3d> MagS = std::vector<Vector3d>(
                     MagnetisationsSPLIT.end() - joints_to_solve - 1,
                     MagnetisationsSPLIT.end());
 
-                std::vector<Link> iLinks(joints_found);
-                std::vector<PosOrientation> iPosVec(joints_found + 1);
-                std::vector<Joint> iJoints(joints_found + 1);
                 if (settingUpController) {
-                    for (int i = 0; i < iPosVec.size(); i++) {
+                    iLinks.clear();
+                    iJoints.clear();
+                    iPosVec.clear();
+                    for (int i = 0; i < joints_to_solve + 1; i++) {
+                        iJoints.push_back(Joint());
+                        iPosVec.push_back(PosOrientation());
                         iJoints[i].assignPosOri(iPosVec[i]);
                     }
                     for (int i = 0; i < iJoints.size(); i++) {
                         iJoints[i].q = Vector3d(0, dAnglesS[i] * M_PI / 180, 0);
                         iJoints[i].LocMag = MagS[i];
                     }
+                    for (int i = 0; i < iJoints.size() - 1; i++) {
+                        iLinks.push_back(Link());
+                    }
                     comp.adjustStiffness(iLinks, EMultiplier, jointMultiplier);
                     field = comp.CalculateField(iLinks, iJoints, iPosVec);
                     field = comp.RotateField(field, reconciliationAngles);
-                    baseline_error = (abs(xError) + yError) / 2;
-                    settingUpController = false;
-                }
+                    // field(2) = -5;
+                    bx = field(0);
+                    by = field(1);
+                    bz = field(2);
 
-                if (baseline_wrt_X < 0.1) {
+                    mid.set3DField(field);
+                    settingUpController = false;
+                    imshow(rawFrame, grabbedFrame);
+                    imshow(processed, processed_frame);
+                    imshow(phantom, phantom_mask);
+                    waitKey(1);
+                    continue;
+                }
+                bool winCon = baseline_wrt_X < 0.1; 
+                bool adjustField = baseline_wrt_X > 0.1 && baseline_wrt_X < 0.4;
+                bool adjustE = !winCon && !adjustField;
+                if (winCon) {
                     finished = true;
-                } else if (baseline_wrt_X > 0.1 && baseline_wrt_X < 0.4) {
+                } else if (adjustField) {
                     std::cout << "Adjusting field from\n" << field << "\n";
                     field += (Kp * Kd) * signFlag * rightHandBend * field;
                     std::cout << "To\n" << field << "\n";
@@ -391,22 +402,30 @@ int main(int argc, char *argv[]) {
                             rightHandBend;
                     field = comp.RotateField(field, reconciliationAngles);
                 }
+                // field(2) = -5;
+                bx = field(0);
+                by = field(1);
+                bz = field(2);
                 mid.set3DField(field);
 
                 if (finished) {
+                    std::cout << "Finished\n";
                     joints_to_solve++;
                     finished = false;
+                    got_baseline = false;
                 }
             } else if (joints_found > joints_to_solve) {
                 joints_to_solve++;
-            } else{
-                mid.retractIntroducer();        
+            } else if (joints_to_solve > 5)
+                break;
+            else {
+                mid.retractIntroducer(10);
             }
 
             // imshow(rawFrame, grabbedFrame);
             // imshow(processed, processed_frame);
             // imshow(phantom, phantom_mask);
-            viz.drawLegend(grabbedFrame);
+            // viz.drawLegend(grabbedFrame);
             imshow(rawFrame, grabbedFrame);
             imshow(processed, processed_frame);
             imshow(phantom, phantom_mask);

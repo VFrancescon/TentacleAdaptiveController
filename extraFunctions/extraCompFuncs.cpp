@@ -235,6 +235,11 @@ Vector3d RotateField(Vector3d field, Vector3d rotationAngles)
     // double AngleZ = rotationAngles(2);
     // double AngleY = rotationAngles(1);
     // double AngleX = rotationAngles(0);
+    Matrix3d rot;
+    rot = AngleAxisd(AngleZ, Vector3d::UnitZ()) *
+           AngleAxisd(AngleY, Vector3d::UnitY()) *
+           AngleAxisd(AngleX, Vector3d::UnitX());
+    // std::cout << "Rot matrix constructed:" << rot << "\n";
 
     return AngleAxisd(AngleZ, Vector3d::UnitZ()) *
            AngleAxisd(AngleY, Vector3d::UnitY()) *
