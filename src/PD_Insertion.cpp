@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
     recordPerformance.open("../PD_BORDERLESS_Results.csv", std::ios_base::app);
     recordPerformance << date << "\n";
     recordPerformance << "Frame, Joints Active, Error(x), "
-                      << "Baseline Error, Bx, By, Bz";
+                      << "Baseline Error, E_Multiplier, Bx, By, Bz";
     int frameCount = 0;
     CompClass comp;
     VisionClass viz;
@@ -251,9 +251,10 @@ int main(int argc, char *argv[]) {
         const uint8_t *pImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
         formatConverter.Convert(pylonImage, ptrGrabResult);
 
-        //check for which bend you have here.
-        //every time we successfully solve 5 joints, we advance the list of stuff to solve
-        //and reset initialSetup, which will cause us to get a new phantom mask
+        // check for which bend you have here.
+        // every time we successfully solve 5 joints, we advance the list of
+        // stuff to solve and reset initialSetup, which will cause us to get a
+        // new phantom mask
 
         if (initialSetup) {
             pre_img =
@@ -393,6 +394,10 @@ int main(int argc, char *argv[]) {
 
                     mid.set3DField(field);
                     settingUpController = false;
+                    recordPerformance << frameCount++ << "," << joints_to_solve
+                                      << "," << xError << "," << baseline_error
+                                      << "," << EMultiplier << "," << bx << ","
+                                      << by << "," << bz << "\n";
                     procVideoOut.write(grabbedFrame);
                     imshow(rawFrame, grabbedFrame);
                     imshow(processed, processed_frame);
@@ -433,12 +438,10 @@ int main(int argc, char *argv[]) {
                 }
             } else if (joints_found > joints_to_solve) {
                 joints_to_solve++;
-            } else if (joints_found > 5)
-            {
+            } else if (joints_found > 5) {
                 initialSetup = true;
-                mid.stepIntroducer(retractions.at(active_index-1));
-            }
-            else {
+                mid.stepIntroducer(retractions.at(active_index - 1));
+            } else {
                 mid.retractIntroducer(2);
             }
 
