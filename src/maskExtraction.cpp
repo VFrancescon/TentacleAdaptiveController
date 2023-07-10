@@ -14,6 +14,7 @@ int main(int argc, char* argv[]) {
     Mat inserted_src_backup = inserted_src.clone();
     VisionClass viz;
     viz.setLinkLenght(30);
+    viz.setRectW(0.5);
     Mat isolatedPhantom = viz.isolatePhantom(mask_src);
     cvtColor(inserted_src_backup, inserted_src_backup, COLOR_BGR2GRAY);
     blur(inserted_src_backup, inserted_src_backup, Size(3, 3));
@@ -30,13 +31,13 @@ int main(int argc, char* argv[]) {
         putText(inserted_src, std::to_string(k), i, FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255), 2);    
         k++;
     }
-    viz.setP0Frame(joints[0]);
-    std::vector<double> desiredAngles = {-40, -5, -5, -5, 0};
-    std::vector<Point> idealPoints = viz.computeIdealPoints(viz.getP0Frame(), desiredAngles); 
-    for(auto i: idealPoints){
-        circle(inserted_src, i, 5, Scalar(0, 255, 0), -1);
-    }
-    std::cout << "P0 frame in class: " << viz.getP0Frame() << std::endl;
+    // viz.setP0Frame(joints[0]);
+    // std::vector<double> desiredAngles = {-40, -5, -5, -5, 0};
+    // std::vector<Point> idealPoints = viz.computeIdealPoints(viz.getP0Frame(), desiredAngles); 
+    // for(auto i: idealPoints){
+    //     circle(inserted_src, i, 5, Scalar(0, 255, 0), -1);
+    // }
+    // std::cout << "P0 frame in class: " << viz.getP0Frame() << std::endl;
     // imshow("inserted", inserted_src_backup);
     // imshow("isolated", isolatedPhantom);
     // imshow("disp", disp);

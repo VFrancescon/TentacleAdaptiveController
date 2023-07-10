@@ -24,7 +24,7 @@ class VisionClass {
     int link_lenght = 30;
 
     int h_low = 0, s_low = 255, v_low = 162;
-    float rect_h = 0.15;
+    float rect_h;
     int PYLON_WIDTH = 0;
     int PYLON_HEIGHT = 0;
     float exposureTime = 20000;

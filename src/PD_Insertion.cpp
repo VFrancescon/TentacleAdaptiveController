@@ -21,12 +21,11 @@ int main(int argc, char *argv[]) {
     char date_string[100];
     strftime(date_string, 50, "%d_%m_%y_%H%M%S", curr_tm);
     std::string date(date_string);
-    // std::ofstream recordPerformance;
-    // recordPerformance.open("../PD_BORDERLESS_Results.csv",
-    // std::ios_base::app); recordPerformance << date << "\n"; recordPerformance
-    //     << "Step, JointNo, Ex(t), Ey(t), BaselineX, E_Multiplier, Bx, By,
-    //     Bz\n";
-
+    std::ofstream recordPerformance;
+    recordPerformance.open("../PD_BORDERLESS_Results.csv", std::ios_base::app);
+    recordPerformance << date << "\n";
+    recordPerformance << "Frame, Joints Active, Error(x), "
+                      << "Baseline Error, Bx, By, Bz";
     CompClass comp;
     VisionClass viz;
     viz.setThresholdLow(80);
@@ -195,16 +194,16 @@ int main(int argc, char *argv[]) {
     //     angleSTR += std::to_string(i) + "_";
     // }
 
-    std::string outputPath = "PD_INSERTION_"  + date + ".avi";
+    std::string outputPath = "PD_INSERTION_" + date + ".avi";
     std::string procPath = "PD_INSERTION_PROC_" + date + ".avi";
     while (file_exists(outputPath)) {
         outputPath += "_1";
     }
 
     VideoWriter rawVideoOut(outputPath, VideoWriter::fourcc('M', 'J', 'P', 'G'),
-                          10, Size(rcols, rrows));
+                            10, Size(rcols, rrows));
     VideoWriter procVideoOut(procPath, VideoWriter::fourcc('M', 'J', 'P', 'G'),
-                          10, Size(rcols, rrows));
+                             10, Size(rcols, rrows));
 
     int error = 0, prev_xerror = 0, prev_yerror = 0;
     int dx_error = 0, dy_error = 0;
@@ -246,6 +245,10 @@ int main(int argc, char *argv[]) {
                               Pylon::TimeoutHandling_ThrowException);
         const uint8_t *pImageBuffer = (uint8_t *)ptrGrabResult->GetBuffer();
         formatConverter.Convert(pylonImage, ptrGrabResult);
+
+        //check for which bend you have here.
+        //every time we successfully solve 5 joints, we advance the list of stuff to solve
+        //and reset initialSetup, which will cause us to get a new phantom mask
 
         if (initialSetup) {
             pre_img =
@@ -418,7 +421,7 @@ int main(int argc, char *argv[]) {
                 }
             } else if (joints_found > joints_to_solve) {
                 joints_to_solve++;
-            } else if (joints_to_solve > 6)
+            } else if (joints_found > 5)
                 break;
             else {
                 mid.retractIntroducer(2);
