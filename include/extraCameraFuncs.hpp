@@ -9,7 +9,6 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/ximgproc.hpp>
 #include <pylon/PylonIncludes.h>
-#include <source/AStar.hpp>
 #include <sys/stat.h>
 using namespace cv;
 

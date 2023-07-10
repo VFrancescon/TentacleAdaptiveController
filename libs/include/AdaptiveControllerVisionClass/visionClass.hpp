@@ -12,7 +12,6 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/ximgproc.hpp>
-#include <source/AStar.hpp>
 using namespace cv;
 /**
  * @brief Class containing all vision related functions and variables

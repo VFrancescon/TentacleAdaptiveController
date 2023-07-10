@@ -8,7 +8,6 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/ximgproc.hpp>
-#include <source/AStar.hpp>
 
 #include "AdaptiveControllerVisionClass/visionClass.hpp"
 using namespace cv;
