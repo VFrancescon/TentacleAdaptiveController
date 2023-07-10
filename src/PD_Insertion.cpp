@@ -26,6 +26,7 @@ int main(int argc, char *argv[]) {
     recordPerformance << date << "\n";
     recordPerformance << "Frame, Joints Active, Error(x), "
                       << "Baseline Error, Bx, By, Bz";
+    int frameCount = 0;
     CompClass comp;
     VisionClass viz;
     viz.setThresholdLow(80);
@@ -52,6 +53,7 @@ int main(int argc, char *argv[]) {
      * * * * * * * * * * * * * * * * * * * * * * * * */
     std::vector<Vector3d> AppliedFields;
 
+    std::vector<std::vector<double>> AllConfigurations;
     std::vector<double> DesiredAngles(jointNo);
     if (argc > 5) {
         DesiredAngles[0] = std::stod(argv[1]);
@@ -68,14 +70,12 @@ int main(int argc, char *argv[]) {
         DesiredAngles[4] = 0;
         DesiredAngles[jointEff] = 0;
     }
+    AllConfigurations.push_back(DesiredAngles);
+    AllConfigurations.push_back(std::vector<double>{-10, 10, 20, 20, 5});
+
     if (argc == 2 || argc == 7) {
         jointMultiplier = std::stoi(argv[argc - 1]);
     }
-    int rightHandBend = 0;
-    rightHandBend =
-        std::signbit(avgVect(DesiredAngles))
-            ? -1
-            : 1;  // signit returns 1 if argument is negative. 0 if positive
 
     std::vector<Vector3d> Magnetisations(jointNo);
     Magnetisations[0] = Vector3d(-0.0011, 0, -0.0028);
@@ -85,23 +85,23 @@ int main(int argc, char *argv[]) {
     Magnetisations[4] = Vector3d(0, 0, -0.003);
     Magnetisations[jointEff] = Vector3d(0, 0, 0);
 
-    // split angles and magnetisations
-    std::vector<double> DesiredAnglesSPLIT(jointEff * jointMultiplier);
-    std::vector<Vector3d> MagnetisationsSPLIT(jointEff * jointMultiplier);
-    if (jointMultiplier > 1) {
-        // convert sub5 joint numbers
-        for (int i = 0; i < jointEff * jointMultiplier; i++) {
-            DesiredAnglesSPLIT[i] =
-                DesiredAngles[i / jointMultiplier] / jointMultiplier;
-            MagnetisationsSPLIT[i] = Magnetisations[i / jointMultiplier];
-        }
-        DesiredAnglesSPLIT.push_back(0);
-        MagnetisationsSPLIT.push_back(Vector3d(0, 0, 0));
-    } else {
-        std::cout << "Using defaults\n";
-        DesiredAnglesSPLIT = DesiredAngles;
-        MagnetisationsSPLIT = Magnetisations;
-    }
+    // // split angles and magnetisations
+    // std::vector<double> DesiredAnglesSPLIT(jointEff * jointMultiplier);
+    // std::vector<Vector3d> MagnetisationsSPLIT(jointEff * jointMultiplier);
+    // if (jointMultiplier > 1) {
+    //     // convert sub5 joint numbers
+    //     for (int i = 0; i < jointEff * jointMultiplier; i++) {
+    //         DesiredAnglesSPLIT[i] =
+    //             DesiredAngles[i / jointMultiplier] / jointMultiplier;
+    //         MagnetisationsSPLIT[i] = Magnetisations[i / jointMultiplier];
+    //     }
+    //     DesiredAnglesSPLIT.push_back(0);
+    //     MagnetisationsSPLIT.push_back(Vector3d(0, 0, 0));
+    // } else {
+    //     std::cout << "Using defaults\n";
+    //     DesiredAnglesSPLIT = DesiredAngles;
+    //     MagnetisationsSPLIT = Magnetisations;
+    // }
 
     // comp.adjustStiffness(iLinks, EMultiplier, jointMultiplier);
 
@@ -239,6 +239,11 @@ int main(int argc, char *argv[]) {
     float by = field(1);
     float bz = field(2);
     double xError = 0, yError = 0, EAdjust = 0;
+    int active_index = 0;
+    const int max_index = 1;
+    std::vector<int> retractions = {35, 35};
+    std::vector<double> rectangles = {0.15, 0.15};
+    std::vector<double> ActiveConfiguration;
     while (camera.IsGrabbing()) {
         // 1. get a phantom mask
         camera.RetrieveResult(5000, ptrGrabResult,
@@ -258,6 +263,7 @@ int main(int argc, char *argv[]) {
                 break;
             }
             resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
+            viz.setRectW(rectangles.at(active_index));
             phantom_mask = viz.isolatePhantom(pre_img);
             imshow(phantom, phantom_mask);
             imshow(rawFrame, pre_img);
@@ -265,12 +271,18 @@ int main(int argc, char *argv[]) {
             if (key == 27) {
                 break;
             }
-            // cv::destroyAllWindows();
-
             // 2. push 1 joint in.
             mid.retractIntroducer(10);
             first_run = true;
             initialSetup = false;
+            settingUpController = true;
+            joints_to_solve = 2;
+            ActiveConfiguration.clear();
+            ActiveConfiguration = AllConfigurations.at(active_index);
+            active_index++;
+            if (active_index > max_index) {
+                break;
+            }
         } else {  // we have established a phantom mask
 
             Mat grabbedFrame =
@@ -302,8 +314,8 @@ int main(int argc, char *argv[]) {
              *
              */
             std::vector<double> dAnglesS = std::vector<double>(
-                DesiredAnglesSPLIT.begin(),
-                DesiredAnglesSPLIT.begin() + joints_to_solve);
+                ActiveConfiguration.begin(),
+                ActiveConfiguration.begin() + joints_to_solve);
 
             std::vector<Point> dPoints = viz.computeIdealPoints(p0, dAnglesS);
             for (int i = 0; i < dPoints.size() - 1; i++) {
@@ -352,8 +364,8 @@ int main(int argc, char *argv[]) {
                 double Kd = derivativeAdjustmentF(dx_error);
 
                 std::vector<Vector3d> MagS = std::vector<Vector3d>(
-                    MagnetisationsSPLIT.end() - joints_to_solve - 1,
-                    MagnetisationsSPLIT.end());
+                    Magnetisations.end() - joints_to_solve - 1,
+                    Magnetisations.end());
 
                 if (settingUpController) {
                     iLinks.clear();
@@ -422,7 +434,10 @@ int main(int argc, char *argv[]) {
             } else if (joints_found > joints_to_solve) {
                 joints_to_solve++;
             } else if (joints_found > 5)
-                break;
+            {
+                initialSetup = true;
+                mid.stepIntroducer(retractions.at(active_index-1));
+            }
             else {
                 mid.retractIntroducer(2);
             }
