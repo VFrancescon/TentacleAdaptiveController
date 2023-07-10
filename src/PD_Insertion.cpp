@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     CompClass comp;
     VisionClass viz;
     viz.setThresholdLow(80);
-    viz.setLinkLenght(15);
+    // viz.setLinkLenght(15);
     viz.setHsvLow(0, 255, 162);
     int jointEff = 5;
     int jointNo = jointEff + 1;
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
             break;
 
         default:
-            viz.setLinkLenght(30);
+            viz.setLinkLenght(35);
             break;
     }
     // timesteps are equal to joint no
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
         DesiredAngles[jointEff] = 0;
     }
     AllConfigurations.push_back(DesiredAngles);
-    AllConfigurations.push_back(std::vector<double>{-10, 10, 20, 20, 5});
+    AllConfigurations.push_back(std::vector<double>{-10, 10, 20, 20, 5, 0});
 
     if (argc == 2 || argc == 7) {
         jointMultiplier = std::stoi(argv[argc - 1]);
@@ -241,7 +241,7 @@ int main(int argc, char *argv[]) {
     double xError = 0, yError = 0, EAdjust = 0;
     int active_index = 0;
     const int max_index = 1;
-    std::vector<int> retractions = {35, 35};
+    std::vector<int> retractions = {45, 40};
     std::vector<double> rectangles = {0.15, 0.15};
     std::vector<double> ActiveConfiguration;
     while (camera.IsGrabbing()) {
@@ -257,6 +257,10 @@ int main(int argc, char *argv[]) {
         // new phantom mask
 
         if (initialSetup) {
+            if (active_index > max_index) {
+                std::cout << "Solved all configurations. Exiting.\n";
+                break;
+            }
             pre_img =
                 cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(),
                         CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
@@ -277,13 +281,12 @@ int main(int argc, char *argv[]) {
             first_run = true;
             initialSetup = false;
             settingUpController = true;
+            got_baseline = false;
             joints_to_solve = 2;
             ActiveConfiguration.clear();
             ActiveConfiguration = AllConfigurations.at(active_index);
             active_index++;
-            if (active_index > max_index) {
-                break;
-            }
+
         } else {  // we have established a phantom mask
 
             Mat grabbedFrame =
@@ -301,7 +304,7 @@ int main(int argc, char *argv[]) {
             joints_found = Joints.size();
             solving_time = joints_found == joints_to_solve;
             if (joints_found != 0) {
-                p0 = Joints.at(0);
+                if(first_run) p0 = Joints.at(0);
                 // std::cout << "p0 is " << p0.x << "," << p0.y << "\n";
                 viz.setP0Frame(p0);
                 first_run = false;
@@ -350,6 +353,8 @@ int main(int argc, char *argv[]) {
                 yError = ywiseError(desiredY, observedY);
                 dx_error = xError - prev_xerror;
                 dy_error = yError - prev_yerror;
+
+
                 prev_xerror = xError;
                 prev_yerror = yError;
                 if (!got_baseline) {
@@ -357,10 +362,10 @@ int main(int argc, char *argv[]) {
                     got_baseline = true;
                 }
                 double baseline_wrt_X =
-                    ((abs(xError) + yError) / 2) / baseline_error;
+                    (xError) / baseline_error;
                 int xFlag = std::signbit(xError) ? -1 : 1;
                 int yFlag = std::signbit(yError) ? -1 : 1;
-                int signFlag = xFlag;
+                
                 double Kp = 0.9;
                 double Kd = derivativeAdjustmentF(dx_error);
 
@@ -405,19 +410,19 @@ int main(int argc, char *argv[]) {
                     waitKey(1);
                     continue;
                 }
-                bool winCon = baseline_wrt_X < 0.1;
-                bool adjustField = baseline_wrt_X > 0.1 && baseline_wrt_X < 0.4;
+                bool winCon = baseline_wrt_X < 0.25;
+                bool adjustField = baseline_wrt_X > 0.25 && baseline_wrt_X < 0.5;
                 bool adjustE = !winCon && !adjustField;
                 if (winCon) {
                     finished = true;
                 } else if (adjustField) {
                     std::cout << "Adjusting field from\n" << field << "\n";
-                    field += (Kp * Kd) / 4 * signFlag * field;
+                    field += (Kp * Kd) / 4 * xFlag * field;
                     std::cout << "To\n" << field << "\n";
                 } else {
                     std::cout << "Adjusting Emultiplier from " << EMultiplier
                               << " to ";
-                    EAdjust = (Kd)*jointMultiplier * signFlag;
+                    EAdjust = (Kd)*jointMultiplier * xFlag;
                     EMultiplier += EAdjust;
                     std::cout << EMultiplier << "\n";
                     comp.adjustStiffness(iLinks, EMultiplier);
@@ -440,20 +445,25 @@ int main(int argc, char *argv[]) {
                 joints_to_solve++;
             } else if (joints_found > 5) {
                 initialSetup = true;
-                mid.stepIntroducer(retractions.at(active_index - 1));
+                mid.set3DField(0,0,0);
+                mid.stepIntroducer( abs(mid.stepper_count));
             } else {
-                mid.retractIntroducer(2);
+                mid.retractIntroducer(5);
             }
 
             // imshow(rawFrame, grabbedFrame);
             // imshow(processed, processed_frame);
             // imshow(phantom, phantom_mask);
             // viz.drawLegend(grabbedFrame);
+            recordPerformance << frameCount++ << "," << joints_to_solve
+                    << "," << xError << "," << baseline_error
+                    << "," << EMultiplier << "," << bx << ","
+                    << by << "," << bz << "\n";
             procVideoOut.write(grabbedFrame);
             imshow(rawFrame, grabbedFrame);
             imshow(processed, processed_frame);
             imshow(phantom, phantom_mask);
-            char c = (char)waitKey(0);
+            char c = (char)waitKey(1000);
             if (c == 27) {
                 break;
             }
@@ -462,7 +472,7 @@ int main(int argc, char *argv[]) {
     }  // while camera is grabbing
 
     // rawVideoOut.release();
-    std::cout << "retracting by " << mid.stepper_count << " steps\n";
+    // std::cout << "retracting by " << mid.stepper_count << " steps\n";
     // mid.stepIntroducer(mid.stepper_count);
     camera.StopGrabbing();
     camera.DestroyDevice();
