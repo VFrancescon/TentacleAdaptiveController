@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{90,0,270};
+    Vector3d reconciliationAngles = Vector3d{90,0,180};
 
     double EMulitplier = 20;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
@@ -32,14 +32,18 @@ int main(int argc, char *argv[])
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
     } else {
-        DesiredAngles[0] = -10;
-        DesiredAngles[1] = 10;
-        DesiredAngles[2] = 20;
-        DesiredAngles[3] = 20;
-        DesiredAngles[4] = 5;
+        DesiredAngles[0] = -20;
+        DesiredAngles[1] = -10;
+        DesiredAngles[2] = -10;
+        DesiredAngles[3] = -5;
+        DesiredAngles[4] = 0;
         DesiredAngles[jointEff] = 0;
     }
-
+    int rightHandBend = 0;
+    rightHandBend =
+        std::signbit(avgVect(DesiredAngles))
+            ? -1
+            : 1;  // signit returns 1 if argument is negative. 0 if positive
     if( argc == 2 || argc == 7) {
         jointMultiplier = std::stoi(argv[argc-1]);
     }
@@ -94,6 +98,7 @@ int main(int argc, char *argv[])
     Vector3d field = CalculateField(iLinks, iJoints, iPosVec);
     field = RotateField(field, reconciliationAngles);
     // field(1) = 0;
+    std::cout << "Righthandbend " << rightHandBend << "\n";
     std::cout << "Initial answer:\n" << field << "\n";
 
 return 0;

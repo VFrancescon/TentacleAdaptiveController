@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     }
     // timesteps are equal to joint no
     int timesteps = jointEff;
-    Vector3d reconciliationAngles = Vector3d{90, 0, 0};
+    Vector3d reconciliationAngles = Vector3d{90, 0, 180};
     double EMultiplier = 5;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
     int rightHandBend = 0;
     rightHandBend =
         std::signbit(avgVect(DesiredAngles))
-            ? 1
+            ? -1
             : 1;  // signit returns 1 if argument is negative. 0 if positive
 
     std::vector<Vector3d> Magnetisations(jointNo);
@@ -190,25 +190,26 @@ int main(int argc, char *argv[]) {
     /*****************************************************************
      * Video Output Setup
      *****************************************************************/
-    std::string angleSTR;
-    for (auto i : DesiredAngles) {
-        angleSTR += std::to_string(i) + "_";
-    }
+    // std::string angleSTR;
+    // for (auto i : DesiredAngles) {
+    //     angleSTR += std::to_string(i) + "_";
+    // }
 
-    std::string outputPath = "PD_INSERTION_" + angleSTR + "_" + date + ".avi";
-
+    std::string outputPath = "PD_INSERTION_"  + date + ".avi";
+    std::string procPath = "PD_INSERTION_PROC_" + date + ".avi";
     while (file_exists(outputPath)) {
         outputPath += "_1";
     }
 
-    // VideoWriter video_out(outputPath, VideoWriter::fourcc('M', 'J', 'P',
-    // 'G'),
-    //                       10, Size(rcols, rrows));
+    VideoWriter rawVideoOut(outputPath, VideoWriter::fourcc('M', 'J', 'P', 'G'),
+                          10, Size(rcols, rrows));
+    VideoWriter procVideoOut(procPath, VideoWriter::fourcc('M', 'J', 'P', 'G'),
+                          10, Size(rcols, rrows));
 
     int error = 0, prev_xerror = 0, prev_yerror = 0;
     int dx_error = 0, dy_error = 0;
     int step_count = 0;
-    Point p0 = Point{rcols / 2, 0};
+    Point p0 = Point{396, 75};
     bool finished = true;
     int baseline_error;
     int signFlag;
@@ -238,6 +239,7 @@ int main(int argc, char *argv[]) {
     float bx = field(0);
     float by = field(1);
     float bz = field(2);
+    double xError = 0, yError = 0, EAdjust = 0;
     while (camera.IsGrabbing()) {
         // 1. get a phantom mask
         camera.RetrieveResult(5000, ptrGrabResult,
@@ -273,6 +275,7 @@ int main(int argc, char *argv[]) {
                         CV_8UC3, (uint8_t *)pylonImage.GetBuffer());
             resize(grabbedFrame, grabbedFrame, Size(rcols, rrows),
                    INTER_LINEAR);
+            rawVideoOut.write(grabbedFrame);
             Mat processed_frame = viz.preprocessImg(grabbedFrame);
             std::vector<Point> Joints;
             if (first_run) {
@@ -327,8 +330,8 @@ int main(int argc, char *argv[]) {
                     observedX.push_back(i.x);
                     observedY.push_back(i.y);
                 }
-                double xError = xwiseError(desiredX, observedX);
-                double yError = ywiseError(desiredY, observedY);
+                xError = xwiseError(desiredX, observedX);
+                yError = ywiseError(desiredY, observedY);
                 dx_error = xError - prev_xerror;
                 dy_error = yError - prev_yerror;
                 prev_xerror = xError;
@@ -342,7 +345,6 @@ int main(int argc, char *argv[]) {
                 int xFlag = std::signbit(xError) ? -1 : 1;
                 int yFlag = std::signbit(yError) ? -1 : 1;
                 int signFlag = xFlag;
-                
                 double Kp = 0.9;
                 double Kd = derivativeAdjustmentF(dx_error);
 
@@ -376,30 +378,30 @@ int main(int argc, char *argv[]) {
 
                     mid.set3DField(field);
                     settingUpController = false;
+                    procVideoOut.write(grabbedFrame);
                     imshow(rawFrame, grabbedFrame);
                     imshow(processed, processed_frame);
                     imshow(phantom, phantom_mask);
                     waitKey(1);
                     continue;
                 }
-                bool winCon = baseline_wrt_X < 0.1; 
+                bool winCon = baseline_wrt_X < 0.1;
                 bool adjustField = baseline_wrt_X > 0.1 && baseline_wrt_X < 0.4;
                 bool adjustE = !winCon && !adjustField;
                 if (winCon) {
                     finished = true;
                 } else if (adjustField) {
                     std::cout << "Adjusting field from\n" << field << "\n";
-                    field += (Kp * Kd) * signFlag * rightHandBend * field;
+                    field += (Kp * Kd) / 4 * signFlag * field;
                     std::cout << "To\n" << field << "\n";
                 } else {
                     std::cout << "Adjusting Emultiplier from " << EMultiplier
                               << " to ";
-                    EMultiplier +=
-                        (Kd)*jointMultiplier * signFlag * rightHandBend;
+                    EAdjust = (Kd)*jointMultiplier * signFlag;
+                    EMultiplier += EAdjust;
                     std::cout << EMultiplier << "\n";
                     comp.adjustStiffness(iLinks, EMultiplier);
-                    field = comp.CalculateField(iLinks, iJoints, iPosVec) *
-                            rightHandBend;
+                    field = comp.CalculateField(iLinks, iJoints, iPosVec);
                     field = comp.RotateField(field, reconciliationAngles);
                 }
                 // field(2) = -5;
@@ -416,16 +418,17 @@ int main(int argc, char *argv[]) {
                 }
             } else if (joints_found > joints_to_solve) {
                 joints_to_solve++;
-            } else if (joints_to_solve > 5)
+            } else if (joints_to_solve > 6)
                 break;
             else {
-                mid.retractIntroducer(10);
+                mid.retractIntroducer(2);
             }
 
             // imshow(rawFrame, grabbedFrame);
             // imshow(processed, processed_frame);
             // imshow(phantom, phantom_mask);
             // viz.drawLegend(grabbedFrame);
+            procVideoOut.write(grabbedFrame);
             imshow(rawFrame, grabbedFrame);
             imshow(processed, processed_frame);
             imshow(phantom, phantom_mask);
@@ -437,11 +440,13 @@ int main(int argc, char *argv[]) {
 
     }  // while camera is grabbing
 
-    // video_out.release();
+    // rawVideoOut.release();
     std::cout << "retracting by " << mid.stepper_count << " steps\n";
     // mid.stepIntroducer(mid.stepper_count);
     camera.StopGrabbing();
     camera.DestroyDevice();
+    rawVideoOut.release();
+    procVideoOut.release();
     // recordPerformance.close();
     return 0;
 }
