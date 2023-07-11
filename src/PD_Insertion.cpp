@@ -41,13 +41,13 @@ int main(int argc, char *argv[]) {
             break;
 
         default:
-            viz.setLinkLenght(35);
+            viz.setLinkLenght(30);
             break;
     }
     // timesteps are equal to joint no
     int timesteps = jointEff;
     Vector3d reconciliationAngles = Vector3d{90, 0, 180};
-    double EMultiplier = 5;
+    double EMultiplier = 10;
     /* * * * * * * * * * * * * * * * * * * * * * * * *
      * PRECOMPUTATION FOR EACH TIMESTEP BEGINS HERE  *
      * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
         DesiredAngles[jointEff] = 0;
     }
     AllConfigurations.push_back(DesiredAngles);
-    AllConfigurations.push_back(std::vector<double>{-10, 10, 20, 20, 5, 0});
+    AllConfigurations.push_back(std::vector<double>{5, 5, 10, 15, 5, 0});
 
     if (argc == 2 || argc == 7) {
         jointMultiplier = std::stoi(argv[argc - 1]);
@@ -228,9 +228,12 @@ int main(int argc, char *argv[]) {
     bool winCon;
     bool adjustField;
     bool adjustE;
+    bool moving = false;
 
     int joints_found = 0;
     int joints_to_solve = 2;
+    int stepsToMove = 0;
+    int stepCount = 0; 
 
     bool initialSetup = true;
     Mat phantom_mask;
@@ -336,6 +339,7 @@ int main(int argc, char *argv[]) {
             circle(grabbedFrame, dPoints[dPoints.size() - 1], 3,
                    Scalar(0, 255, 0), FILLED);
 
+
             if (solving_time && !extrapush) {  // run the controller here
                 std::cout << "Controller would run here\n";
 
@@ -395,7 +399,7 @@ int main(int argc, char *argv[]) {
                     comp.adjustStiffness(iLinks, EMultiplier, jointMultiplier);
                     field = comp.CalculateField(iLinks, iJoints, iPosVec);
                     field = comp.RotateField(field, reconciliationAngles);
-                    // field(2) = -5;
+                    field(2) = 0;
                     bx = field(0);
                     by = field(1);
                     bz = field(2);
@@ -413,8 +417,8 @@ int main(int argc, char *argv[]) {
                     waitKey(1);
                     continue;
                 }
-                winCon = baseline_wrt_X < 0.25;
-                adjustField = baseline_wrt_X > 0.25 && baseline_wrt_X < 0.5;
+                winCon = baseline_wrt_X < 0.15;
+                adjustField = baseline_wrt_X > 0.15 && baseline_wrt_X < 0.5;
                 adjustE = !winCon && !adjustField;
                 if (winCon) {
                     finished = true;
@@ -431,8 +435,8 @@ int main(int argc, char *argv[]) {
                     field = comp.CalculateField(iLinks, iJoints, iPosVec);
                     field = comp.RotateField(field, reconciliationAngles);
                 }
+                field(2) = 0;
                 std::cout << "Field\n" << field << "\n";
-                // field(2) = -5;
                 bx = field(0);
                 by = field(1);
                 bz = field(2);
@@ -446,12 +450,21 @@ int main(int argc, char *argv[]) {
                 // usleep(5e6);
             } else if (joints_found > joints_to_solve) {
                 joints_to_solve++;
-            } else if (joints_found == 5 && finished) {
+            } else if (joints_to_solve == 6) {
                 initialSetup = true;
                 mid.set3DField(0,0,0);
-                mid.stepIntroducer( abs(mid.stepper_count));
+
+                for(int i = 0; i < abs(mid.stepper_count); i++){
+                    mid.stepIntroducer(1);
+                    procVideoOut.write(grabbedFrame);
+                    imshow(rawFrame, grabbedFrame);
+                    imshow(processed, processed_frame);
+                    imshow(phantom, phantom_mask);
+                    waitKey(100);
+                }                
+                // mid.stepIntroducer( abs(mid.stepper_count));
             } else {
-                mid.retractIntroducer(5);
+                mid.retractIntroducer(4);
                 // if(joints_found > 3) mid.retractIntroducer(10);
             }
 
@@ -467,6 +480,7 @@ int main(int argc, char *argv[]) {
             imshow(rawFrame, grabbedFrame);
             imshow(processed, processed_frame);
             imshow(phantom, phantom_mask);
+            extrapush = false;
             char c = (char)waitKey(0);
             if( c == 'n') {
                 mid.retractIntroducer(4);
@@ -475,7 +489,7 @@ int main(int argc, char *argv[]) {
             else if (c == 27) {
                 break;
             }
-            extrapush = false;
+            
         }  // we have established a phantom mask
 
     }  // while camera is grabbing
