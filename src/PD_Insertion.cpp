@@ -224,7 +224,7 @@ int main(int argc, char *argv[]) {
     bool first_run;
     bool solving_time = false;
     bool got_baseline = false;
-
+    bool extrapush = false;
     bool winCon;
     bool adjustField;
     bool adjustE;
@@ -336,7 +336,7 @@ int main(int argc, char *argv[]) {
             circle(grabbedFrame, dPoints[dPoints.size() - 1], 3,
                    Scalar(0, 255, 0), FILLED);
 
-            if (solving_time) {  // run the controller here
+            if (solving_time && !extrapush) {  // run the controller here
                 std::cout << "Controller would run here\n";
 
                 /**
@@ -421,7 +421,6 @@ int main(int argc, char *argv[]) {
                 } else if (adjustField) {
                     std::cout << "Adjusting field from\n" << field << "\n";
                     field += (Kp * Kd) / 4 * xFlag * field;
-                    std::cout << "To\n" << field << "\n";
                 } else {
                     std::cout << "Adjusting Emultiplier from " << EMultiplier
                               << " to ";
@@ -432,26 +431,28 @@ int main(int argc, char *argv[]) {
                     field = comp.CalculateField(iLinks, iJoints, iPosVec);
                     field = comp.RotateField(field, reconciliationAngles);
                 }
+                std::cout << "Field\n" << field << "\n";
                 // field(2) = -5;
                 bx = field(0);
                 by = field(1);
                 bz = field(2);
                 mid.set3DField(field);
-
                 if (finished) {
                     std::cout << "Finished\n";
                     joints_to_solve++;
                     finished = false;
                     got_baseline = false;
                 }
+                // usleep(5e6);
             } else if (joints_found > joints_to_solve) {
                 joints_to_solve++;
-            } else if (joints_found > 5) {
+            } else if (joints_found == 5 && finished) {
                 initialSetup = true;
                 mid.set3DField(0,0,0);
                 mid.stepIntroducer( abs(mid.stepper_count));
             } else {
                 mid.retractIntroducer(5);
+                // if(joints_found > 3) mid.retractIntroducer(10);
             }
 
             // imshow(rawFrame, grabbedFrame);
@@ -467,10 +468,14 @@ int main(int argc, char *argv[]) {
             imshow(processed, processed_frame);
             imshow(phantom, phantom_mask);
             char c = (char)waitKey(0);
-            if( c == 'n') mid.retractIntroducer();
+            if( c == 'n') {
+                mid.retractIntroducer(4);
+                extrapush = true;
+                }
             else if (c == 27) {
                 break;
             }
+            extrapush = false;
         }  // we have established a phantom mask
 
     }  // while camera is grabbing
@@ -478,6 +483,7 @@ int main(int argc, char *argv[]) {
     // rawVideoOut.release();
     // std::cout << "retracting by " << mid.stepper_count << " steps\n";
     // mid.stepIntroducer(mid.stepper_count);
+    mid.unwindIntroducer();
     camera.StopGrabbing();
     camera.DestroyDevice();
     rawVideoOut.release();

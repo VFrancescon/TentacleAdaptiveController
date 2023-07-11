@@ -163,8 +163,8 @@ std::vector<Point> VisionClass::computeIdealPoints(
     for (int i = 1; i < desiredAngles_.size(); i++) {
         double angle = 0;
         for (int k = 0; k < i; k++) angle += desiredAngles_[k];
-        int xdiff = (double)(this->link_lenght) * 1.8 * sin(angle * M_PI / 180);
-        int ydiff = (double)(this->link_lenght) * 1.8 * cos(angle * M_PI / 180);
+        int xdiff = (double)(this->link_lenght) * 1.3 * sin(angle * M_PI / 180);
+        int ydiff = (double)(this->link_lenght) * 1.3 * cos(angle * M_PI / 180);
         Point pn =
             Point{(int)(ideal[i - 1].x + xdiff), (int)(ideal[i - 1].y + ydiff)};
         ideal.push_back(pn);
@@ -284,7 +284,7 @@ std::vector<Point> VisionClass::findJoints(Mat post_img_masked,
               std::bind(&VisionClass::euclideanSort, this,
                         std::placeholders::_1, std::placeholders::_2));
 
-    int JointNumber = cntLine.size() / this->link_lenght;
+    int JointNumber = (int) std::floor( (double) cntLine.size() /  (double) this->link_lenght );
     if (JointNumber) {
         Joints = this->equally_spaced_points(cntLine, JointNumber);
         return Joints;
