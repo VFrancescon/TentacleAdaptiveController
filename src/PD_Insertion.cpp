@@ -223,8 +223,11 @@ int main(int argc, char *argv[]) {
     bool settingUpController = true;
     bool first_run;
     bool solving_time = false;
-
     bool got_baseline = false;
+
+    bool winCon;
+    bool adjustField;
+    bool adjustE;
 
     int joints_found = 0;
     int joints_to_solve = 2;
@@ -410,9 +413,9 @@ int main(int argc, char *argv[]) {
                     waitKey(1);
                     continue;
                 }
-                bool winCon = baseline_wrt_X < 0.25;
-                bool adjustField = baseline_wrt_X > 0.25 && baseline_wrt_X < 0.5;
-                bool adjustE = !winCon && !adjustField;
+                winCon = baseline_wrt_X < 0.25;
+                adjustField = baseline_wrt_X > 0.25 && baseline_wrt_X < 0.5;
+                adjustE = !winCon && !adjustField;
                 if (winCon) {
                     finished = true;
                 } else if (adjustField) {
@@ -463,8 +466,9 @@ int main(int argc, char *argv[]) {
             imshow(rawFrame, grabbedFrame);
             imshow(processed, processed_frame);
             imshow(phantom, phantom_mask);
-            char c = (char)waitKey(1000);
-            if (c == 27) {
+            char c = (char)waitKey(0);
+            if( c == 'n') mid.retractIntroducer();
+            else if (c == 27) {
                 break;
             }
         }  // we have established a phantom mask
