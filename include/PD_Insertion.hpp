@@ -18,7 +18,7 @@ inline double xwiseError(std::vector<double> observedX, std::vector<double> desi
     double sum = 0;
     for (size_t i = 0; i < observedX.size(); i++)
     {
-        sum += (desiredX[i] - observedX[i]) * (i+1);
+        sum += (desiredX[i] - observedX[i]) / (observedX.size() - i);
     }
     return sum / observedX.size();
 }
@@ -28,7 +28,7 @@ inline double ywiseError(std::vector<double> observedY, std::vector<double> desi
     double sum = 0;
     for (size_t i = 0; i < observedY.size(); i++)
     {
-        sum += (desiredY[i] - observedY[i]) * (i+1);
+        sum += (desiredY[i] - observedY[i]) / (observedY.size() - i);
     }
     return sum / observedY.size();
 }

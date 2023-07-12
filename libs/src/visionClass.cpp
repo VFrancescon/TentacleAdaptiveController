@@ -163,8 +163,8 @@ std::vector<Point> VisionClass::computeIdealPoints(
     for (int i = 1; i < desiredAngles_.size(); i++) {
         double angle = 0;
         for (int k = 0; k < i; k++) angle += desiredAngles_[k];
-        int xdiff = (double)(this->link_lenght) * 1.3 * sin(angle * M_PI / 180);
-        int ydiff = (double)(this->link_lenght) * 1.3 * cos(angle * M_PI / 180);
+        int xdiff = (double)(this->link_lenght) * this->len_adj * sin(angle * M_PI / 180);
+        int ydiff = (double)(this->link_lenght) * this->len_adj * cos(angle * M_PI / 180);
         Point pn =
             Point{(int)(ideal[i - 1].x + xdiff), (int)(ideal[i - 1].y + ydiff)};
         ideal.push_back(pn);
@@ -458,6 +458,8 @@ void VisionClass::setHsvLow(int H, int S, int V) {
 }
 
 void VisionClass::setRectW(float rectW) { this->rect_h = rectW; }
+
+void VisionClass::setlenAdj(float lenAdj) { this->len_adj = lenAdj; }
 
 void VisionClass::printStatus(void){
     //print all private class members

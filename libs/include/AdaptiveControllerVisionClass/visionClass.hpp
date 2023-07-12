@@ -29,7 +29,7 @@ class VisionClass {
     int PYLON_HEIGHT = 0;
     float exposureTime = 20000;
     int JointNumber;
-
+    double len_adj = 1.0;
     Point p0frame;
     /**
      * @brief Compares two cv::Points, x-wise. Used for sorting
@@ -231,6 +231,13 @@ class VisionClass {
      * @param p0frame
      */
     void setP0Frame(Point p0frame);
+
+    /**
+     * @brief Set the len adj object
+     * 
+     * @param lenAdj 
+     */
+    void setlenAdj(float lenAdj);
 
     /**
      * @brief Get the Joint Number object

@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     CompClass comp;
     VisionClass viz;
     viz.setThresholdLow(80);
-    // viz.setLinkLenght(15);
+    viz.setlenAdj(1.5);
     viz.setHsvLow(0, 255, 162);
     int jointEff = 5;
     int jointNo = jointEff + 1;
@@ -71,8 +71,8 @@ int main(int argc, char *argv[]) {
         DesiredAngles[jointEff] = 0;
     }
     AllConfigurations.push_back(DesiredAngles);
-    AllConfigurations.push_back(std::vector<double>{30, 0, 0, 0, 0, 0});
     AllConfigurations.push_back(std::vector<double>{5, 5, 10, 15, 5, 0});
+    AllConfigurations.push_back(std::vector<double>{20, 0, 0, 0, 0, 0});
     int rightHandBend = 0;
     if (argc == 2 || argc == 7) {
         jointMultiplier = std::stoi(argv[argc - 1]);
@@ -244,9 +244,9 @@ int main(int argc, char *argv[]) {
     float bz = field(2);
     double xError = 0, yError = 0, EAdjust = 0;
     int active_index = 0;
-    const int max_index = 1;
+    const int max_index = 2;
     std::vector<int> retractions = {45, 40};
-    std::vector<double> rectangles = {0.15, 0.6, 0.15};
+    std::vector<double> rectangles = {0.15, 0.15, 0.6};
     std::vector<double> ActiveConfiguration;
     while (camera.IsGrabbing()) {
         // 1. get a phantom mask
@@ -277,7 +277,7 @@ int main(int argc, char *argv[]) {
             std::cout << "Phantom mask found. Press enter to continue.\n";
             imshow(phantom, phantom_mask);
             imshow(rawFrame, pre_img);
-            char key = (char)waitKey(0);
+            char key = (char)waitKey(1000);
             if (key == 27) {
                 break;
             }
@@ -308,7 +308,7 @@ int main(int argc, char *argv[]) {
             } else
                 Joints = viz.findJoints(processed_frame, p0);
             joints_found = Joints.size();
-            // if(joints_found > 3) viz.setLinkLenght(25);
+            if (joints_found > 2) viz.setlenAdj(1.25);
             solving_time = joints_found == joints_to_solve;
             if (joints_found != 0) {
                 if (first_run) p0 = Joints.at(0);
@@ -343,25 +343,20 @@ int main(int argc, char *argv[]) {
             if (moving) {
                 mid.set3DField(0, 0, 0);
                 if (step_count == 0) step_count = abs(mid.stepper_count);
-                if (active_index == 2) {
-                    mid.stepIntroducer(1);
-                    procVideoOut.write(grabbedFrame);
-                    imshow(rawFrame, grabbedFrame);
-                    imshow(processed, processed_frame);
-                    imshow(phantom, phantom_mask);
-                    waitKey(200);
-                    step_count--;
-                    if (step_count != 0)
-                        continue;
-                    else {
-                        initialSetup = true;
-                        moving = false;
-                    }
-                } else {
-                    mid.set3DField(20,10, 0);
+                mid.stepIntroducer(1);
+                procVideoOut.write(grabbedFrame);
+                imshow(rawFrame, grabbedFrame);
+                imshow(processed, processed_frame);
+                imshow(phantom, phantom_mask);
+                waitKey(200);
+                step_count--;
+                if (step_count != 0)
+                    continue;
+                else {
                     initialSetup = true;
-                    moving = false;}
-                 
+                    moving = false;
+                }
+
             } else if (solving_time && !extrapush) {  // run the controller here
                 std::cout << "Controller would run here\n";
 
@@ -437,9 +432,10 @@ int main(int argc, char *argv[]) {
                     waitKey(1);
                     continue;
                 }
-                if(baseline_error <= 15) small_scale = 2; 
+                if (baseline_error <= 4) small_scale = 2.75;
                 winCon = baseline_wrt_X < 0.25 * small_scale;
-                adjustField = baseline_wrt_X > 0.25*small_scale && baseline_wrt_X < 0.4*small_scale;
+                adjustField = baseline_wrt_X > 0.25 * small_scale &&
+                              baseline_wrt_X < 0.4 * small_scale;
                 adjustE = !winCon && !adjustField;
                 if (winCon) {
                     finished = true;
@@ -493,7 +489,7 @@ int main(int argc, char *argv[]) {
             imshow(processed, processed_frame);
             imshow(phantom, phantom_mask);
             extrapush = false;
-            char c = (char)waitKey(1000);
+            char c = (char)waitKey(500);
             if (c == 'n') {
                 mid.retractIntroducer(2);
                 extrapush = true;
