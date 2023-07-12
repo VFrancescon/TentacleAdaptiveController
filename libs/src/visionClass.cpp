@@ -80,7 +80,7 @@ Mat VisionClass::isolatePhantom(Mat src) {
     inRange(hsv, Scalar(this->h_low, this->s_low, this->v_low),
             Scalar(255, 255, 255), mask);
     blur(hsv, hsv, Size(3, 3));
-    Point p1(0, 0), p2(0, src.rows), p3(src.cols * this->rect_h, 0);
+    Point p1(0, 0), p2(0, src.rows), p3(src.cols * 0.2, 0);
     std::vector<Point> lpts = {p1, p2, p3};
 
     Point p4(src.cols, 0), p5(src.cols, src.rows), p6(src.cols * 0.8, 0);

@@ -65,14 +65,15 @@ int main(int argc, char *argv[]) {
     } else {
         DesiredAngles[0] = -20;
         DesiredAngles[1] = -10;
-        DesiredAngles[2] = -10;
+        DesiredAngles[2] = -5;
         DesiredAngles[3] = -5;
         DesiredAngles[4] = 0;
         DesiredAngles[jointEff] = 0;
     }
     AllConfigurations.push_back(DesiredAngles);
+    AllConfigurations.push_back(std::vector<double>{30, 0, 0, 0, 0, 0});
     AllConfigurations.push_back(std::vector<double>{5, 5, 10, 15, 5, 0});
-
+    int rightHandBend = 0;
     if (argc == 2 || argc == 7) {
         jointMultiplier = std::stoi(argv[argc - 1]);
     }
@@ -208,11 +209,11 @@ int main(int argc, char *argv[]) {
     int error = 0, prev_xerror = 0, prev_yerror = 0;
     int dx_error = 0, dy_error = 0;
     int step_count = 0;
-    Point p0 = Point{396, 75};
+    Point p0 = Point{0, 0};
     bool finished = true;
     int baseline_error;
     int signFlag;
-
+    double small_scale = 1;
     // std::cout << "Ready to go. Press enter";
     // std::cin.get();
     // mid.retractIntroducer(10);
@@ -245,7 +246,7 @@ int main(int argc, char *argv[]) {
     int active_index = 0;
     const int max_index = 1;
     std::vector<int> retractions = {45, 40};
-    std::vector<double> rectangles = {0.15, 0.15};
+    std::vector<double> rectangles = {0.15, 0.6, 0.15};
     std::vector<double> ActiveConfiguration;
     while (camera.IsGrabbing()) {
         // 1. get a phantom mask
@@ -273,6 +274,7 @@ int main(int argc, char *argv[]) {
             resize(pre_img, pre_img, Size(rcols, rrows), INTER_LINEAR);
             viz.setRectW(rectangles.at(active_index));
             phantom_mask = viz.isolatePhantom(pre_img);
+            std::cout << "Phantom mask found. Press enter to continue.\n";
             imshow(phantom, phantom_mask);
             imshow(rawFrame, pre_img);
             char key = (char)waitKey(0);
@@ -289,6 +291,7 @@ int main(int argc, char *argv[]) {
             ActiveConfiguration.clear();
             ActiveConfiguration = AllConfigurations.at(active_index);
             active_index++;
+            rightHandBend = avgVect(ActiveConfiguration) < 0 ? 1 : -1;
 
         } else {  // we have established a phantom mask
 
@@ -305,9 +308,10 @@ int main(int argc, char *argv[]) {
             } else
                 Joints = viz.findJoints(processed_frame, p0);
             joints_found = Joints.size();
+            // if(joints_found > 3) viz.setLinkLenght(25);
             solving_time = joints_found == joints_to_solve;
             if (joints_found != 0) {
-                if(first_run) p0 = Joints.at(0);
+                if (first_run) p0 = Joints.at(0);
                 // std::cout << "p0 is " << p0.x << "," << p0.y << "\n";
                 viz.setP0Frame(p0);
                 first_run = false;
@@ -336,19 +340,28 @@ int main(int argc, char *argv[]) {
             circle(grabbedFrame, dPoints[dPoints.size() - 1], 3,
                    Scalar(0, 255, 0), FILLED);
 
-
-            if (joints_to_solve == 6) {
-                initialSetup = true;
-                mid.set3DField(0,0,0);
-                if(step_count == 0) step_count = abs(mid.stepper_count);
-                mid.stepIntroducer(1);
-                procVideoOut.write(grabbedFrame);
-                imshow(rawFrame, grabbedFrame);
-                imshow(processed, processed_frame);
-                imshow(phantom, phantom_mask);
-                waitKey(200);
-                step_count--;
-                if(step_count != 0) continue; 
+            if (moving) {
+                mid.set3DField(0, 0, 0);
+                if (step_count == 0) step_count = abs(mid.stepper_count);
+                if (active_index == 2) {
+                    mid.stepIntroducer(1);
+                    procVideoOut.write(grabbedFrame);
+                    imshow(rawFrame, grabbedFrame);
+                    imshow(processed, processed_frame);
+                    imshow(phantom, phantom_mask);
+                    waitKey(200);
+                    step_count--;
+                    if (step_count != 0)
+                        continue;
+                    else {
+                        initialSetup = true;
+                        moving = false;
+                    }
+                } else {
+                    mid.set3DField(20,10, 0);
+                    initialSetup = true;
+                    moving = false;}
+                 
             } else if (solving_time && !extrapush) {  // run the controller here
                 std::cout << "Controller would run here\n";
 
@@ -371,16 +384,15 @@ int main(int argc, char *argv[]) {
                 dy_error = yError - prev_yerror;
                 prev_xerror = xError;
                 prev_yerror = yError;
-                
+
                 if (!got_baseline) {
                     baseline_error = sqrt(pow(xError, 2) + pow(yError, 2));
                     got_baseline = true;
                 }
-                double baseline_wrt_X =
-                    (xError) / baseline_error;
+                double baseline_wrt_X = (xError) / baseline_error;
                 int xFlag = std::signbit(xError) ? -1 : 1;
                 int yFlag = std::signbit(yError) ? -1 : 1;
-                
+
                 double Kp = 0.9;
                 double Kd = derivativeAdjustmentF(dx_error);
 
@@ -425,18 +437,19 @@ int main(int argc, char *argv[]) {
                     waitKey(1);
                     continue;
                 }
-                winCon = baseline_wrt_X < 0.15;
-                adjustField = baseline_wrt_X > 0.15 && baseline_wrt_X < 0.5;
+                if(baseline_error <= 15) small_scale = 2; 
+                winCon = baseline_wrt_X < 0.25 * small_scale;
+                adjustField = baseline_wrt_X > 0.25*small_scale && baseline_wrt_X < 0.4*small_scale;
                 adjustE = !winCon && !adjustField;
                 if (winCon) {
                     finished = true;
                 } else if (adjustField) {
                     std::cout << "Adjusting field from\n" << field << "\n";
-                    field += (Kp * Kd) / 4 * xFlag * field;
+                    field += (Kp * Kd) / 4 * xFlag * field * rightHandBend;
                 } else {
                     std::cout << "Adjusting Emultiplier from " << EMultiplier
                               << " to ";
-                    EAdjust = (Kd)*jointMultiplier * xFlag;
+                    EAdjust = (Kd)*jointMultiplier * xFlag * rightHandBend;
                     EMultiplier += EAdjust;
                     std::cout << EMultiplier << "\n";
                     comp.adjustStiffness(iLinks, EMultiplier);
@@ -448,16 +461,20 @@ int main(int argc, char *argv[]) {
                 bx = field(0);
                 by = field(1);
                 bz = field(2);
+                // if(abs(bx) > 20){
+                //     std::cout << "Hold on\n";
+                // }
                 mid.set3DField(field);
                 if (finished) {
                     std::cout << "Finished\n";
                     joints_to_solve++;
+                    if (joints_to_solve == 7) moving = true;
                     finished = false;
                     got_baseline = false;
                 }
                 // usleep(5e6);
             } else if (joints_found > joints_to_solve) {
-                joints_to_solve++;
+                mid.stepIntroducer();
             } else {
                 mid.retractIntroducer(4);
                 // if(joints_found > 3) mid.retractIntroducer(10);
@@ -467,24 +484,23 @@ int main(int argc, char *argv[]) {
             // imshow(processed, processed_frame);
             // imshow(phantom, phantom_mask);
             // viz.drawLegend(grabbedFrame);
-            recordPerformance << frameCount++ << "," << joints_to_solve
-                    << "," << xError << "," << baseline_error
-                    << "," << EMultiplier << "," << bx << ","
-                    << by << "," << bz << "\n";
+            recordPerformance << frameCount++ << "," << joints_to_solve << ","
+                              << xError << "," << baseline_error << ","
+                              << EMultiplier << "," << bx << "," << by << ","
+                              << bz << "\n";
             procVideoOut.write(grabbedFrame);
             imshow(rawFrame, grabbedFrame);
             imshow(processed, processed_frame);
             imshow(phantom, phantom_mask);
             extrapush = false;
-            char c = (char)waitKey(0);
-            if( c == 'n') {
-                mid.retractIntroducer(4);
+            char c = (char)waitKey(1000);
+            if (c == 'n') {
+                mid.retractIntroducer(2);
                 extrapush = true;
-                }
-            else if (c == 27) {
+            } else if (c == 27) {
                 break;
             }
-            
+
         }  // we have established a phantom mask
 
     }  // while camera is grabbing
