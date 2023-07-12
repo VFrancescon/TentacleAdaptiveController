@@ -229,11 +229,8 @@ int main(int argc, char *argv[]) {
     bool adjustField;
     bool adjustE;
     bool moving = false;
-
     int joints_found = 0;
     int joints_to_solve = 2;
-    int stepsToMove = 0;
-    int stepCount = 0; 
 
     bool initialSetup = true;
     Mat phantom_mask;
@@ -340,7 +337,19 @@ int main(int argc, char *argv[]) {
                    Scalar(0, 255, 0), FILLED);
 
 
-            if (solving_time && !extrapush) {  // run the controller here
+            if (joints_to_solve == 6) {
+                initialSetup = true;
+                mid.set3DField(0,0,0);
+                if(step_count == 0) step_count = abs(mid.stepper_count);
+                mid.stepIntroducer(1);
+                procVideoOut.write(grabbedFrame);
+                imshow(rawFrame, grabbedFrame);
+                imshow(processed, processed_frame);
+                imshow(phantom, phantom_mask);
+                waitKey(200);
+                step_count--;
+                if(step_count != 0) continue; 
+            } else if (solving_time && !extrapush) {  // run the controller here
                 std::cout << "Controller would run here\n";
 
                 /**
@@ -360,10 +369,9 @@ int main(int argc, char *argv[]) {
                 yError = ywiseError(desiredY, observedY);
                 dx_error = xError - prev_xerror;
                 dy_error = yError - prev_yerror;
-
-
                 prev_xerror = xError;
                 prev_yerror = yError;
+                
                 if (!got_baseline) {
                     baseline_error = sqrt(pow(xError, 2) + pow(yError, 2));
                     got_baseline = true;
@@ -450,19 +458,6 @@ int main(int argc, char *argv[]) {
                 // usleep(5e6);
             } else if (joints_found > joints_to_solve) {
                 joints_to_solve++;
-            } else if (joints_to_solve == 6) {
-                initialSetup = true;
-                mid.set3DField(0,0,0);
-
-                for(int i = 0; i < abs(mid.stepper_count); i++){
-                    mid.stepIntroducer(1);
-                    procVideoOut.write(grabbedFrame);
-                    imshow(rawFrame, grabbedFrame);
-                    imshow(processed, processed_frame);
-                    imshow(phantom, phantom_mask);
-                    waitKey(100);
-                }                
-                // mid.stepIntroducer( abs(mid.stepper_count));
             } else {
                 mid.retractIntroducer(4);
                 // if(joints_found > 3) mid.retractIntroducer(10);
