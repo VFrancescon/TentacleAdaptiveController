@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
     }
     AllConfigurations.push_back(DesiredAngles);
     AllConfigurations.push_back(std::vector<double>{5, 5, 10, 15, 5, 0});
-    AllConfigurations.push_back(std::vector<double>{20, 0, 0, 0, 0, 0});
+    AllConfigurations.push_back(std::vector<double>{45, 0, 0, 0, 0, 0});
     int rightHandBend = 0;
     if (argc == 2 || argc == 7) {
         jointMultiplier = std::stoi(argv[argc - 1]);
@@ -245,7 +245,8 @@ int main(int argc, char *argv[]) {
     double xError = 0, yError = 0, EAdjust = 0;
     int active_index = 0;
     const int max_index = 2;
-    std::vector<int> retractions = {45, 40};
+    std::vector<int> retractions = {45, 40, 0};
+    int to_retract = 0;
     std::vector<double> rectangles = {0.15, 0.15, 0.6};
     std::vector<double> ActiveConfiguration;
     while (camera.IsGrabbing()) {
@@ -290,6 +291,7 @@ int main(int argc, char *argv[]) {
             joints_to_solve = 2;
             ActiveConfiguration.clear();
             ActiveConfiguration = AllConfigurations.at(active_index);
+            to_retract = retractions.at(active_index);
             active_index++;
             rightHandBend = avgVect(ActiveConfiguration) < 0 ? 1 : -1;
 
@@ -342,8 +344,12 @@ int main(int argc, char *argv[]) {
 
             if (moving) {
                 mid.set3DField(0, 0, 0);
-                if (step_count == 0) step_count = abs(mid.stepper_count);
-                mid.stepIntroducer(1);
+                if (step_count == 0) {
+                    if (mid.stepper_count > to_retract)
+                        step_count = abs(mid.stepper_count);
+                } else step_count = to_retract;
+                if(step_count > 0) mid.stepIntroducer(1);
+                else mid.retractIntroducer(1);
                 procVideoOut.write(grabbedFrame);
                 imshow(rawFrame, grabbedFrame);
                 imshow(processed, processed_frame);
