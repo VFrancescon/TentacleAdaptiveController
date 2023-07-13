@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
     } else {
-        DesiredAngles[0] = -20;
+        DesiredAngles[0] = -25;
         DesiredAngles[1] = -10;
         DesiredAngles[2] = -5;
         DesiredAngles[3] = -5;
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
         DesiredAngles[jointEff] = 0;
     }
     AllConfigurations.push_back(DesiredAngles);
-    AllConfigurations.push_back(std::vector<double>{5, 5, 10, 15, 5, 0});
+    AllConfigurations.push_back(std::vector<double>{10, 5, 10, 15, 5, 0});
     AllConfigurations.push_back(std::vector<double>{45, 0, 0, 0, 0, 0});
     int rightHandBend = 0;
     if (argc == 2 || argc == 7) {
@@ -245,7 +245,7 @@ int main(int argc, char *argv[]) {
     double xError = 0, yError = 0, EAdjust = 0;
     int active_index = 0;
     const int max_index = 2;
-    std::vector<int> retractions = {45, 40, 0};
+    std::vector<int> retractions = {45, 0, 0};
     int to_retract = 0;
     std::vector<double> rectangles = {0.15, 0.15, 0.6};
     std::vector<double> ActiveConfiguration;
@@ -345,9 +345,8 @@ int main(int argc, char *argv[]) {
             if (moving) {
                 mid.set3DField(0, 0, 0);
                 if (step_count == 0) {
-                    if (mid.stepper_count > to_retract)
-                        step_count = abs(mid.stepper_count);
-                } else step_count = to_retract;
+                    step_count = to_retract;
+                } 
                 if(step_count > 0) mid.stepIntroducer(1);
                 else mid.retractIntroducer(1);
                 procVideoOut.write(grabbedFrame);
@@ -470,7 +469,7 @@ int main(int argc, char *argv[]) {
                 if (finished) {
                     std::cout << "Finished\n";
                     joints_to_solve++;
-                    if (joints_to_solve == 7) moving = true;
+                    if (joints_to_solve == 6) moving = true;
                     finished = false;
                     got_baseline = false;
                 }
