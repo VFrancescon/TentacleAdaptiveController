@@ -63,15 +63,15 @@ int main(int argc, char *argv[]) {
         DesiredAngles[4] = std::stod(argv[5]);
         DesiredAngles[jointEff] = 0;
     } else {
-        DesiredAngles[0] = -25;
-        DesiredAngles[1] = -10;
-        DesiredAngles[2] = -5;
+        DesiredAngles[0] = -15;
+        DesiredAngles[1] = -15;
+        DesiredAngles[2] = -10;
         DesiredAngles[3] = -5;
-        DesiredAngles[4] = 0;
+        DesiredAngles[4] = -5;
         DesiredAngles[jointEff] = 0;
     }
     AllConfigurations.push_back(DesiredAngles);
-    AllConfigurations.push_back(std::vector<double>{10, 5, 10, 15, 5, 0});
+    AllConfigurations.push_back(std::vector<double>{0, 5, 5, 10, 5, 0});
     AllConfigurations.push_back(std::vector<double>{45, 0, 0, 0, 0, 0});
     int rightHandBend = 0;
     if (argc == 2 || argc == 7) {
@@ -292,7 +292,8 @@ int main(int argc, char *argv[]) {
             ActiveConfiguration.clear();
             ActiveConfiguration = AllConfigurations.at(active_index);
             to_retract = retractions.at(active_index);
-            active_index++;
+            step_count = to_retract;
+            // active_index++;
             rightHandBend = avgVect(ActiveConfiguration) < 0 ? 1 : -1;
 
         } else {  // we have established a phantom mask
@@ -310,7 +311,10 @@ int main(int argc, char *argv[]) {
             } else
                 Joints = viz.findJoints(processed_frame, p0);
             joints_found = Joints.size();
-            if (joints_found > 2) viz.setlenAdj(1.25);
+            if (joints_found > 4)
+                viz.setlenAdj(1.25);
+            else
+                viz.setlenAdj(1.5);
             solving_time = joints_found == joints_to_solve;
             if (joints_found != 0) {
                 if (first_run) p0 = Joints.at(0);
@@ -331,37 +335,40 @@ int main(int argc, char *argv[]) {
                 ActiveConfiguration.begin() + joints_to_solve);
 
             std::vector<Point> dPoints = viz.computeIdealPoints(p0, dAnglesS);
-            for (int i = 0; i < dPoints.size() - 1; i++) {
-                // std::cout << " " << i;
-                line(grabbedFrame, dPoints[i], dPoints[i + 1],
-                     Scalar(0, 0, 255), 2);
-                circle(grabbedFrame, dPoints[i], 3, Scalar(0, 0, 255), FILLED);
-                // putText(post_img, std::to_string(i), dPoints[i],
-                //         FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
+            if (!moving) {
+                for (int i = 0; i < dPoints.size() - 1; i++) {
+                    // std::cout << " " << i;
+                    line(grabbedFrame, dPoints[i], dPoints[i + 1],
+                         Scalar(0, 0, 255), 2);
+                    circle(grabbedFrame, dPoints[i], 3, Scalar(0, 0, 255),
+                           FILLED);
+                    // putText(post_img, std::to_string(i), dPoints[i],
+                    //         FONT_HERSHEY_SIMPLEX, 1.0, Scalar(255, 0, 0));
+                }
+                circle(grabbedFrame, dPoints[dPoints.size() - 1], 3,
+                       Scalar(0, 255, 0), FILLED);
             }
-            circle(grabbedFrame, dPoints[dPoints.size() - 1], 3,
-                   Scalar(0, 255, 0), FILLED);
 
             if (moving) {
                 mid.set3DField(0, 0, 0);
-                if (step_count == 0) {
-                    step_count = to_retract;
-                } 
-                if(step_count > 0) mid.stepIntroducer(1);
-                else mid.retractIntroducer(1);
-                procVideoOut.write(grabbedFrame);
-                imshow(rawFrame, grabbedFrame);
-                imshow(processed, processed_frame);
-                imshow(phantom, phantom_mask);
-                waitKey(200);
-                step_count--;
-                if (step_count != 0)
-                    continue;
+                if (step_count != 0) {
+                    if (step_count > 0)
+                        mid.stepIntroducer();
+                    else
+                        mid.retractIntroducer();
+                    step_count--;
+                    procVideoOut.write(grabbedFrame);
+                    imshow(rawFrame, grabbedFrame);
+                    imshow(processed, processed_frame);
+                    imshow(phantom, phantom_mask);
+                    waitKey(100);
+                }
                 else {
                     initialSetup = true;
                     moving = false;
+                    active_index++;
+                    continue;
                 }
-
             } else if (solving_time && !extrapush) {  // run the controller here
                 std::cout << "Controller would run here\n";
 
@@ -469,7 +476,8 @@ int main(int argc, char *argv[]) {
                 if (finished) {
                     std::cout << "Finished\n";
                     joints_to_solve++;
-                    if (joints_to_solve == 6) moving = true;
+                    if (joints_to_solve > 5  && joints_found > 5 )
+                        moving = true;
                     finished = false;
                     got_baseline = false;
                 }
