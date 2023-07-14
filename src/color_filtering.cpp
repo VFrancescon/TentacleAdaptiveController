@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
         }
         resize(frame, frame, Size(frame.cols * 3 / 8, frame.rows * 3 / 8),
                INTER_LINEAR);
-        viz.setRectW(0.15);
+        viz.setRectW(0.69);
         mask = viz.isolatePhantom(frame);
 
         bitwise_and(frame, frame, final_result, mask);

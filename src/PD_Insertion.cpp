@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     CompClass comp;
     VisionClass viz;
     viz.setThresholdLow(80);
-    viz.setlenAdj(1.5);
+    viz.setlenAdj(1.25);
     viz.setHsvLow(0, 255, 162);
     int jointEff = 5;
     int jointNo = jointEff + 1;
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
             break;
 
         default:
-            viz.setLinkLenght(30);
+            viz.setLinkLenght(25);
             break;
     }
     // timesteps are equal to joint no
@@ -72,7 +72,9 @@ int main(int argc, char *argv[]) {
     }
     AllConfigurations.push_back(DesiredAngles);
     AllConfigurations.push_back(std::vector<double>{0, 5, 5, 10, 5, 0});
-    AllConfigurations.push_back(std::vector<double>{25, 25, 5, 0, 0, 0});
+    AllConfigurations.push_back(std::vector<double>{40, 10, 5, 0, 0, 0});
+    AllConfigurations.push_back(std::vector<double>{-40, 5, 0, 0, 0, 0});
+    AllConfigurations.push_back(std::vector<double>{-20, 15, 0, 0, 0, 0});
     int rightHandBend = 0;
     if (argc == 2 || argc == 7) {
         jointMultiplier = std::stoi(argv[argc - 1]);
@@ -243,11 +245,11 @@ int main(int argc, char *argv[]) {
     float by = field(1);
     float bz = field(2);
     double xError = 0, yError = 0, EAdjust = 0;
-    int active_index = 0;
-    const int max_index = 2;
-    std::vector<int> retractions = {45, 0, 0};
+    int active_index = 3;
+    const int max_index = 4;
+    std::vector<int> retractions = {45, 0, 0, 25, 0};
     int to_retract = 0;
-    std::vector<double> rectangles = {0.15, 0.15, 0.6};
+    std::vector<double> rectangles = {0.15, 0.15, 0.6, 0.69, 0.69};
     std::vector<double> ActiveConfiguration;
     while (camera.IsGrabbing()) {
         // 1. get a phantom mask
@@ -283,7 +285,7 @@ int main(int argc, char *argv[]) {
                 break;
             }
             // 2. push 1 joint in.
-            mid.retractIntroducer(10);
+            mid.retractIntroducer(2);
             first_run = true;
             initialSetup = false;
             settingUpController = true;
@@ -312,9 +314,10 @@ int main(int argc, char *argv[]) {
                 Joints = viz.findJoints(processed_frame, p0);
             joints_found = Joints.size();
             if (joints_found > 4)
-                viz.setlenAdj(1.25);
+                viz.setlenAdj(1.1);
             else
-                viz.setlenAdj(1.5);
+                viz.setlenAdj(1.3);
+            if(active_index == 4 ) viz.setLinkLenght(23);
             solving_time = joints_found == joints_to_solve;
             if (joints_found != 0) {
                 if (first_run) p0 = Joints.at(0);
@@ -362,8 +365,7 @@ int main(int argc, char *argv[]) {
                     imshow(processed, processed_frame);
                     imshow(phantom, phantom_mask);
                     waitKey(100);
-                }
-                else {
+                } else {
                     initialSetup = true;
                     moving = false;
                     active_index++;
@@ -397,10 +399,10 @@ int main(int argc, char *argv[]) {
                     got_baseline = true;
                 }
                 double baseline_wrt_X = (xError) / baseline_error;
-                int xFlag = std::signbit(xError) ? -1 : 1;
-                int yFlag = std::signbit(yError) ? -1 : 1;
+                int xFlag = std::signbit(baseline_error - xError) ? -1 : 1;
+                int yFlag = std::signbit(baseline_error - yError) ? -1 : 1;
 
-                double Kp = 0.9;
+                double Kp = 0.4;
                 double Kd = derivativeAdjustmentF(dx_error);
 
                 std::vector<Vector3d> MagS = std::vector<Vector3d>(
@@ -449,12 +451,14 @@ int main(int argc, char *argv[]) {
                 adjustField = baseline_wrt_X > 0.25 * small_scale &&
                               baseline_wrt_X < 0.4 * small_scale;
                 adjustE = !winCon && !adjustField;
-                if (baseline_error == 1 ) winCon = true;
+                if (baseline_error <= 1) winCon = true;
                 if (winCon) {
                     finished = true;
                 } else if (adjustField) {
                     std::cout << "Adjusting field from\n" << field << "\n";
-                    field += ((Kp * Kd) / 4 * xFlag  * rightHandBend) * field ;
+                    // field += ((Kp * Kd) / 4 * xFlag  * rightHandBend) * field
+                    // ;
+                    field = field * (1 + (Kp * Kd)* 0.5 * xFlag * rightHandBend);
                 } else {
                     std::cout << "Adjusting Emultiplier from " << EMultiplier
                               << " to ";
@@ -477,8 +481,7 @@ int main(int argc, char *argv[]) {
                 if (finished) {
                     std::cout << "Finished\n";
                     joints_to_solve++;
-                    if (joints_to_solve > 5  && joints_found > 5 )
-                        moving = true;
+                    if (joints_to_solve >= 5 && joints_found >= 5) moving = true;
                     finished = false;
                     got_baseline = false;
                 }
@@ -486,7 +489,7 @@ int main(int argc, char *argv[]) {
             } else if (joints_found > joints_to_solve) {
                 mid.stepIntroducer();
             } else {
-                mid.retractIntroducer(4);
+                mid.retractIntroducer(2);
                 // if(joints_found > 3) mid.retractIntroducer(10);
             }
 
