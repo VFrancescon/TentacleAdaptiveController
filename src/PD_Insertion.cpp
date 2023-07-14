@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
         DesiredAngles[jointEff] = 0;
     } else {
         DesiredAngles[0] = -15;
-        DesiredAngles[1] = -15;
+        DesiredAngles[1] = -10;
         DesiredAngles[2] = -10;
         DesiredAngles[3] = -5;
         DesiredAngles[4] = -5;
@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
     }
     AllConfigurations.push_back(DesiredAngles);
     AllConfigurations.push_back(std::vector<double>{0, 5, 5, 10, 5, 0});
-    AllConfigurations.push_back(std::vector<double>{45, 0, 0, 0, 0, 0});
+    AllConfigurations.push_back(std::vector<double>{25, 25, 5, 0, 0, 0});
     int rightHandBend = 0;
     if (argc == 2 || argc == 7) {
         jointMultiplier = std::stoi(argv[argc - 1]);
@@ -335,7 +335,7 @@ int main(int argc, char *argv[]) {
                 ActiveConfiguration.begin() + joints_to_solve);
 
             std::vector<Point> dPoints = viz.computeIdealPoints(p0, dAnglesS);
-            if (!moving) {
+            if (!moving && joints_found > 1) {
                 for (int i = 0; i < dPoints.size() - 1; i++) {
                     // std::cout << " " << i;
                     line(grabbedFrame, dPoints[i], dPoints[i + 1],
@@ -449,11 +449,12 @@ int main(int argc, char *argv[]) {
                 adjustField = baseline_wrt_X > 0.25 * small_scale &&
                               baseline_wrt_X < 0.4 * small_scale;
                 adjustE = !winCon && !adjustField;
+                if (baseline_error == 1 ) winCon = true;
                 if (winCon) {
                     finished = true;
                 } else if (adjustField) {
                     std::cout << "Adjusting field from\n" << field << "\n";
-                    field += (Kp * Kd) / 4 * xFlag * field * rightHandBend;
+                    field += ((Kp * Kd) / 4 * xFlag  * rightHandBend) * field ;
                 } else {
                     std::cout << "Adjusting Emultiplier from " << EMultiplier
                               << " to ";
